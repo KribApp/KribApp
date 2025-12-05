@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { Database } from '../types/database.types';
+import { router } from 'expo-router';
 
 type UserProfile = Database['public']['Tables']['users']['Row'];
 type Household = Database['public']['Tables']['households']['Row'];
@@ -43,6 +44,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
                 setHousehold(null);
                 setMember(null);
                 setLoading(false);
+                router.replace('/(auth)/login');
             }
         });
 
@@ -65,10 +67,17 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
                 .from('users')
                 .select('*')
                 .eq('id', authUser.id)
-                .single();
+                .maybeSingle();
 
             if (userError) {
                 console.error('Error fetching user profile:', userError);
+            } else if (!userProfile) {
+                // User exists in Auth but not in public.users (e.g. after DB reset)
+                console.warn('User profile not found. Signing out.');
+                alert('Account Error: Your user profile was not found. Please register again.');
+                await supabase.auth.signOut();
+                router.replace('/(auth)/login');
+                return;
             } else {
                 setUser(userProfile);
             }
@@ -78,7 +87,12 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
                 .from('household_members')
                 .select('*, households(*)')
                 .eq('user_id', authUser.id)
-                .single();
+                .limit(1)
+                .maybeSingle();
+
+            if (memberError) {
+                console.error('Error fetching household member:', memberError);
+            }
 
             if (memberData) {
                 setMember(memberData);

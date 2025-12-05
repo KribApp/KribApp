@@ -18,7 +18,6 @@ export default function UserSettings() {
     const [saving, setSaving] = useState(false);
 
     const photoRef = useRef<TextInput>(null);
-    const photoRef = useRef<TextInput>(null);
 
     useEffect(() => {
         fetchUserProfile();

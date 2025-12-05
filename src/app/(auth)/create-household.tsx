@@ -4,6 +4,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import { router } from 'expo-router';
 import { supabase } from '../../services/supabase';
 import { StatusBar } from 'expo-status-bar';
+import { useHousehold } from '../../context/HouseholdContext';
 
 // Assuming KribTheme is defined elsewhere or needs to be imported.
 // For this change, I'll define a placeholder if it's not present.
@@ -21,6 +22,7 @@ export default function CreateHousehold() {
     const [streetAndNumber, setStreetAndNumber] = useState('');
     const [postalCode, setPostalCode] = useState('');
     const [city, setCity] = useState('');
+    const { refreshHousehold } = useHousehold();
 
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -204,6 +206,7 @@ export default function CreateHousehold() {
 
         setLoading(false);
         Alert.alert('Succes', `Huis '${name}' aangemaakt! Je code is: ${inviteCode}`);
+        await refreshHousehold();
         router.replace('/(app)/dashboard');
     }
 

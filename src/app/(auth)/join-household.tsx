@@ -4,9 +4,11 @@ import { router } from 'expo-router';
 import { supabase } from '../../services/supabase';
 import { StatusBar } from 'expo-status-bar';
 import { KribTheme } from '../../theme/theme';
+import { useHousehold } from '../../context/HouseholdContext';
 export default function JoinHousehold() {
     const [inviteCode, setInviteCode] = useState('');
     const [loading, setLoading] = useState(false);
+    const { refreshHousehold } = useHousehold();
 
     async function joinHousehold() {
         if (!inviteCode) {
@@ -56,6 +58,7 @@ export default function JoinHousehold() {
 
         setLoading(false);
         Alert.alert('Succes', `Welkom bij ${household.name}!`);
+        await refreshHousehold();
         router.replace('/(app)/dashboard');
     }
 
@@ -66,7 +69,7 @@ export default function JoinHousehold() {
         >
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.container}>
-                    <StatusBar style="dark" />
+                    <StatusBar style="light" />
                     <View style={styles.header}>
                         <Text style={styles.title}>Huis Joinen</Text>
                         <Text style={styles.subtitle}>Voer de code in die je hebt gekregen.</Text>
@@ -112,7 +115,7 @@ export default function JoinHousehold() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#5D5FEF', // Indigo Background
         padding: 24,
         justifyContent: 'center',
     },
@@ -122,12 +125,13 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#111827',
+        color: '#FFFFFF', // White text
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: '#FFFFFF', // White text
+        opacity: 0.9,
     },
     form: {
         gap: 20,
@@ -138,12 +142,12 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#374151',
+        color: '#FFFFFF', // White text
     },
     input: {
         backgroundColor: '#FFFFFF',
         borderWidth: 1,
-        borderColor: '#D1D5DB',
+        borderColor: '#E5E7EB',
         borderRadius: 12,
         padding: 16,
         fontSize: 16,
@@ -171,7 +175,8 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     backButtonText: {
-        color: '#6B7280',
+        color: '#FFFFFF', // White text
         fontSize: 16,
+        opacity: 0.8,
     }
 });

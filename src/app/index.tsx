@@ -27,7 +27,21 @@ export default function Index() {
     }, []);
 
     async function checkHousehold(userId: string) {
-        // Check if user is in any household
+        // 1. Check if user profile exists in public.users
+        const { data: profile, error: profileError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (!profile) {
+            // Profile missing (e.g. after DB reset). 
+            // Do NOT redirect. Let HouseholdContext handle the sign out / error.
+            setLoading(false);
+            return;
+        }
+
+        // 2. Check if user is in any household
         const { data, error } = await supabase
             .from('household_members')
             .select('household_id')

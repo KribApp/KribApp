@@ -24,6 +24,20 @@ export default function Login() {
             Alert.alert('Error', error.message);
             setLoading(false);
         } else {
+            // Check if profile exists before considering login successful
+            const { data: profile } = await supabase
+                .from('users')
+                .select('id')
+                .eq('id', (await supabase.auth.getUser()).data.user?.id)
+                .maybeSingle();
+
+            if (!profile) {
+                await supabase.auth.signOut();
+                Alert.alert('Account Error', 'Your user profile was not found. Please register again.');
+                setLoading(false);
+                return;
+            }
+
             // Session update will trigger redirect in index.tsx or _layout.tsx
             // But we can also manually push if needed, though the auth listener is better.
             setLoading(false);

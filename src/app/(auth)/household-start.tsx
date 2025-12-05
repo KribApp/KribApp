@@ -6,7 +6,7 @@ import { Home, UserPlus } from 'lucide-react-native';
 export default function HouseholdStart() {
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
             <View style={styles.header}>
                 <Text style={styles.title}>Bijna klaar!</Text>
                 <Text style={styles.subtitle}>Sluit je aan bij een huis of start een nieuwe.</Text>
@@ -44,7 +44,7 @@ export default function HouseholdStart() {
                 // Temporary logout for testing
                 router.replace('/(auth)/login');
             }} style={{ marginTop: 40 }}>
-                <Text style={{ color: 'gray' }}>Terug naar login</Text>
+                <Text style={{ color: 'white', opacity: 0.8 }}>Terug naar login</Text>
             </TouchableOpacity>
         </View>
     );
@@ -53,7 +53,7 @@ export default function HouseholdStart() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#5D5FEF', // Indigo Background
         padding: 24,
         justifyContent: 'center',
         alignItems: 'center',
@@ -65,13 +65,14 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#111827',
+        color: '#FFFFFF', // White text
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: '#FFFFFF', // White text
         textAlign: 'center',
+        opacity: 0.9,
     },
     options: {
         width: '100%',
@@ -83,13 +84,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         padding: 24,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
+        // borderWidth: 1,
+        // borderColor: '#E5E7EB',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
     },
     cardCreate: {
         // borderLeftWidth: 4,
