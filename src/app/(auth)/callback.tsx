@@ -8,19 +8,43 @@ export default function AuthCallback() {
 
     useEffect(() => {
         if (code) {
-            supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+            supabase.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
                 if (error) {
                     console.error('Error exchanging code:', error);
-                    // Handle error (e.g., show alert, redirect to login)
                     router.replace('/(auth)/login');
-                } else {
-                    // Success! Session is set.
-                    // The auth listener in HouseholdContext/index.tsx will handle the redirect.
+                } else if (data.session && data.user) {
+                    // Check if user profile exists
+                    const { data: profile } = await supabase
+                        .from('users')
+                        .select('id')
+                        .eq('id', data.user.id)
+                        .single();
+
+                    if (!profile) {
+                        // Profile missing, create it manually
+                        const { error: insertError } = await supabase
+                            .from('users')
+                            .insert([
+                                {
+                                    id: data.user.id,
+                                    email: data.user.email,
+                                    username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
+                                }
+                            ]);
+
+                        if (insertError) {
+                            console.error('Error creating user profile:', insertError);
+                            // Fallback to login if we can't create profile
+                            router.replace('/(auth)/login');
+                            return;
+                        }
+                    }
+
+                    // Success! Session is set and profile exists.
                     router.replace('/');
                 }
             });
         } else {
-            // No code found, maybe just a redirect?
             router.replace('/');
         }
     }, [code]);

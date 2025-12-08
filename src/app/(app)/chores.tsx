@@ -44,7 +44,15 @@ export default function Huishouden() {
     // --- Template Actions ---
 
     async function addTemplate(title: string) {
-        if (!householdId) return;
+        if (!title.trim()) {
+            Alert.alert('Fout', 'Vul een titel in.');
+            return;
+        }
+
+        if (!householdId) {
+            Alert.alert('Error', 'Geen huishouden gevonden.');
+            return;
+        }
 
         // Optimistic update
         const tempId = Math.random().toString();
@@ -89,19 +97,23 @@ export default function Huishouden() {
     // --- Assignment Actions ---
 
     async function assignTask(memberId: string) {
-        if (!selectedTemplateForAssignment || !householdId) return;
+        const templateToAssign = selectedTemplateForAssignment;
+        if (!templateToAssign || !householdId) {
+            Alert.alert('Error', 'Geen taak of huishouden geselecteerd.');
+            return;
+        }
 
         // Optimistic update
         const tempId = Math.random().toString();
         const newChore = {
             id: tempId,
             household_id: householdId,
-            title: selectedTemplateForAssignment.title,
+            title: templateToAssign.title,
             assigned_to_user_id: memberId,
             status: 'PENDING',
-            points: selectedTemplateForAssignment.points,
+            points: templateToAssign.points,
             due_date: selectedDate.toISOString(),
-            template_id: selectedTemplateForAssignment.id,
+            template_id: templateToAssign.id,
             assigned_to: members.find(m => m.user_id === memberId)?.users
         };
 
@@ -109,27 +121,31 @@ export default function Huishouden() {
         setShowAssignmentModal(false);
         setSelectedTemplateForAssignment(null);
 
-        const { data, error } = await supabase
-            .from('chores')
-            .insert([{
-                household_id: householdId,
-                title: selectedTemplateForAssignment.title,
-                assigned_to_user_id: memberId,
-                status: 'PENDING',
-                points: selectedTemplateForAssignment.points,
-                due_date: selectedDate.toISOString(),
-                template_id: selectedTemplateForAssignment.id,
-            }])
-            .select('*, assigned_to:users(username)')
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from('chores')
+                .insert([{
+                    household_id: householdId,
+                    title: templateToAssign.title,
+                    assigned_to_user_id: memberId,
+                    status: 'PENDING',
+                    points: templateToAssign.points,
+                    due_date: selectedDate.toISOString(),
+                    template_id: templateToAssign.id,
+                }])
+                .select('*, assigned_to:users(username)')
+                .single();
 
-        if (error) {
+            if (error) throw error;
+
+            if (data) {
+                // Replace temp with real
+                setChores(prev => prev.map(c => c.id === tempId ? data : c));
+            }
+        } catch (error: any) {
             Alert.alert('Error', `Kon taak niet toewijzen: ${error.message}`);
             // Revert
             setChores(prev => prev.filter(c => c.id !== tempId));
-        } else if (data) {
-            // Replace temp with real
-            setChores(prev => prev.map(c => c.id === tempId ? data : c));
         }
     }
 
@@ -166,7 +182,7 @@ export default function Huishouden() {
         }
     }
 
-    const canManage = userRole === 'ADMIN' || userRole === 'CORVEE_PLANNER';
+    const canManage = true; // Allow everyone to manage tasks for now
 
     return (
         <View style={styles.container}>

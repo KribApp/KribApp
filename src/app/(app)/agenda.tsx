@@ -236,23 +236,36 @@ export default function Agenda() {
                         <Text style={styles.deadlineText}>Deadline: {deadline}</Text>
                     </View>
 
-                    <View style={styles.actionButtons}>
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.joinButton]}
-                            onPress={() => setStatus('EATING')}
-                        >
-                            <Check size={20} color={KribTheme.colors.text.inverse} />
-                            <Text style={styles.buttonText}>Ik eet mee</Text>
-                        </TouchableOpacity>
+                    {(() => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const selected = new Date(selectedDate);
+                        selected.setHours(0, 0, 0, 0);
+                        const isPastDate = selected < today;
 
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.leaveButton]}
-                            onPress={() => setStatus('NOT_EATING')}
-                        >
-                            <X size={20} color={KribTheme.colors.text.inverse} />
-                            <Text style={styles.buttonText}>Ik eet niet mee</Text>
-                        </TouchableOpacity>
-                    </View>
+                        if (!isPastDate) {
+                            return (
+                                <View style={styles.actionButtons}>
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, styles.joinButton]}
+                                        onPress={() => setStatus('EATING')}
+                                    >
+                                        <Check size={20} color={KribTheme.colors.text.inverse} />
+                                        <Text style={styles.buttonText}>Ik eet mee</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, styles.leaveButton]}
+                                        onPress={() => setStatus('NOT_EATING')}
+                                    >
+                                        <X size={20} color={KribTheme.colors.text.inverse} />
+                                        <Text style={styles.buttonText}>Ik eet niet mee</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            );
+                        }
+                        return null;
+                    })()}
 
                     {loading ? (
                         <ActivityIndicator style={{ marginTop: 20 }} />

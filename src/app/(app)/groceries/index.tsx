@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '../../../services/supabase';
-import { Plus, Trash2, AlertTriangle, ChefHat, Pin, PinOff } from 'lucide-react-native';
+import { Plus, Trash2, AlertTriangle, ChefHat, Pin, PinOff, GripVertical } from 'lucide-react-native';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { StatusBar } from 'expo-status-bar';
 import { KribTheme } from '../../../theme/theme';
 import { DrawerToggleButton } from '@react-navigation/drawer';
@@ -57,27 +58,28 @@ export default function Groceries() {
 
     const sortedItems = useMemo(() => {
         const sorted = [...items].sort((a, b) => {
-            // 1. Pinned & Unchecked (Highest Priority)
-            if (a.is_pinned && !a.is_checked && (!b.is_pinned || b.is_checked)) return -1;
-            if (b.is_pinned && !b.is_checked && (!a.is_pinned || a.is_checked)) return 1;
+            // 1. Pinned items always at top
+            if (a.is_pinned && !b.is_pinned) return -1;
+            if (!a.is_pinned && b.is_pinned) return 1;
 
-            // 2. Pinned & Checked (Second Priority)
-            if (a.is_pinned && a.is_checked && !b.is_pinned) return -1;
-            if (b.is_pinned && b.is_checked && !a.is_pinned) return 1;
+            // 2. If both pinned, sort by position (or created_at if position is same/0)
+            if (a.is_pinned && b.is_pinned) {
+                // Pinned items might not be draggable in this design, but let's keep them stable
+                return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+            }
 
-            // 3. Unchecked (Normal) vs Checked (Normal)
+            // 3. Unpinned items: Checked items at bottom
             if (a.is_checked !== b.is_checked) {
                 return a.is_checked ? 1 : -1;
             }
 
-            // If both are pinned (or both not pinned) and have same check status:
-            // If items are checked, sort by Newest First (recently bought at top of checked list)
-            if (a.is_checked) {
-                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            // 4. Unpinned & Unchecked: Sort by Position
+            if (!a.is_checked) {
+                return (a.position || 0) - (b.position || 0);
             }
 
-            // If items are unchecked, sort by Oldest First (longest out of stock at top of list)
-            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+            // 5. Unpinned & Checked: Sort by Newest First (recently bought)
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
         return sorted;
     }, [items]);
@@ -88,7 +90,8 @@ export default function Groceries() {
             .from('shopping_items')
             .select('*')
             .eq('household_id', householdId)
-            .order('created_at', { ascending: true }); // Default to oldest first for initial fetch
+            .order('position', { ascending: true })
+            .order('created_at', { ascending: true });
 
         if (data) {
             setItems(data);
@@ -139,6 +142,7 @@ export default function Groceries() {
                     added_by_user_id: userId,
                     is_checked: false,
                     is_pinned: false,
+                    position: items.length > 0 ? Math.max(...items.map(i => i.position || 0)) + 1 : 0
                 }
             ])
             .select();
@@ -248,8 +252,59 @@ export default function Groceries() {
         }
     }
 
-    const renderItem = ({ item }: { item: any }) => (
-        <View style={[styles.itemContainer, item.is_pinned && styles.itemContainerPinned]}>
+}
+
+const onDragEnd = async ({ data }: { data: any[] }) => {
+    // Optimistic update
+    setItems(prev => {
+        // We only reordered the unpinned & unchecked items.
+        // We need to merge this back into the full list.
+        // Actually, DraggableFlatList gives us the data in the new order for the rendered list.
+        // Since we might filter what we pass to DraggableFlatList, we need to be careful.
+        // But here we will pass 'sortedItems' to it? No, we can't sort inside render if we want drag.
+        // We should pass the full list or a subset?
+        // If we pass sortedItems, and drag, 'data' is the new sortedItems.
+        // We need to update the 'position' of these items based on their new index.
+
+        const updatedItems = [...prev];
+        data.forEach((item, index) => {
+            const foundIndex = updatedItems.findIndex(i => i.id === item.id);
+            if (foundIndex !== -1) {
+                updatedItems[foundIndex] = { ...updatedItems[foundIndex], position: index };
+            }
+        });
+        return updatedItems;
+    });
+
+    // Persist to DB
+    // We only need to update the items that changed position.
+    // For simplicity, we can update all in the dragged group.
+    const updates = data.map((item, index) => ({
+        id: item.id,
+        position: index,
+    }));
+
+    for (const update of updates) {
+        await supabase
+            .from('shopping_items')
+            .update({ position: update.position })
+            .eq('id', update.id);
+    }
+};
+
+const renderItem = ({ item, drag, isActive }: RenderItemParams<any>) => (
+    <ScaleDecorator>
+        <View style={[
+            styles.itemContainer,
+            item.is_pinned && styles.itemContainerPinned,
+            isActive && { backgroundColor: '#F3F4F6' }
+        ]}>
+            {!item.is_pinned && !item.is_checked && (
+                <TouchableOpacity onPressIn={drag} disabled={isActive} style={styles.dragHandle}>
+                    <GripVertical size={20} color={KribTheme.colors.text.secondary} />
+                </TouchableOpacity>
+            )}
+
             <TouchableOpacity
                 style={styles.checkboxContainer}
                 onPress={() => toggleItem(item.id, item.is_checked)}
@@ -278,59 +333,61 @@ export default function Groceries() {
                 </TouchableOpacity>
             </View>
         </View >
-    );
+    </ScaleDecorator>
+);
 
-    return (
-        <View style={styles.container}>
-            <StatusBar style="dark" />
-            <View style={styles.header}>
-                <DrawerToggleButton tintColor="#FFFFFF" />
-                <Text style={styles.headerTitle}>Boodschappen</Text>
-                <TouchableOpacity onPress={() => router.push('/(app)/groceries/hall-of-fame')}>
-                    <ChefHat size={24} color="#FFFFFF" />
+return (
+    <View style={styles.container}>
+        <StatusBar style="dark" />
+        <View style={styles.header}>
+            <DrawerToggleButton tintColor="#FFFFFF" />
+            <Text style={styles.headerTitle}>Boodschappen</Text>
+            <TouchableOpacity onPress={() => router.push('/(app)/groceries/hall-of-fame')}>
+                <ChefHat size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+        </View>
+
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={100}
+        >
+            <View style={styles.addItemContainer}>
+                <TextInput
+                    style={styles.input}
+                    value={newItemName}
+                    onChangeText={setNewItemName}
+                    placeholder="Nieuw item toevoegen..."
+                    placeholderTextColor={KribTheme.colors.text.secondary}
+                    onSubmitEditing={addItem}
+                    returnKeyType="done"
+                />
+                <TouchableOpacity style={styles.addButton} onPress={addItem}>
+                    <Plus size={24} color={KribTheme.colors.primary} />
                 </TouchableOpacity>
             </View>
 
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={100}
-            >
-                <View style={styles.addItemContainer}>
-                    <TextInput
-                        style={styles.input}
-                        value={newItemName}
-                        onChangeText={setNewItemName}
-                        placeholder="Nieuw item toevoegen..."
-                        placeholderTextColor={KribTheme.colors.text.secondary}
-                        onSubmitEditing={addItem}
-                        returnKeyType="done"
-                    />
-                    <TouchableOpacity style={styles.addButton} onPress={addItem}>
-                        <Plus size={24} color={KribTheme.colors.primary} />
-                    </TouchableOpacity>
-                </View>
-
-                {loading ? (
-                    <ActivityIndicator style={{ marginTop: 20 }} />
-                ) : (
-                    <FlatList
-                        data={sortedItems}
-                        renderItem={renderItem}
-                        keyExtractor={(item) => item.id}
-                        contentContainerStyle={styles.listContent}
-                        ListEmptyComponent={
-                            <View style={styles.emptyList}>
-                                <View style={styles.emptyListCard}>
-                                    <Text style={styles.emptyListText}>Je koelkast is leeg (of vol)!</Text>
-                                </View>
+            {loading ? (
+                <ActivityIndicator style={{ marginTop: 20 }} />
+            ) : (
+                <DraggableFlatList
+                    data={sortedItems}
+                    onDragEnd={onDragEnd}
+                    keyExtractor={(item) => item.id}
+                    renderItem={renderItem}
+                    contentContainerStyle={styles.listContent}
+                    ListEmptyComponent={
+                        <View style={styles.emptyList}>
+                            <View style={styles.emptyListCard}>
+                                <Text style={styles.emptyListText}>De boodschappenlijst is leeg.</Text>
                             </View>
-                        }
-                    />
-                )}
-            </KeyboardAvoidingView>
-        </View>
-    );
+                        </View>
+                    }
+                />
+            )}
+        </KeyboardAvoidingView>
+    </View>
+);
 }
 
 const styles = StyleSheet.create({
@@ -393,6 +450,10 @@ const styles = StyleSheet.create({
     itemContainerPinned: {
         borderLeftWidth: 4,
         borderLeftColor: KribTheme.colors.primary,
+    },
+    dragHandle: {
+        padding: 8,
+        marginRight: 4,
     },
     checkboxContainer: {
         flexDirection: 'row',

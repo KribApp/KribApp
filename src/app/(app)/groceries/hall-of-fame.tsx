@@ -25,22 +25,43 @@ export default function HallOfFame() {
     }, [householdId]);
 
     async function fetchHousehold() {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.log('No user found');
+                setLoading(false);
+                return;
+            }
 
-        const { data: member } = await supabase
-            .from('household_members')
-            .select('household_id')
-            .eq('user_id', user.id)
-            .single();
+            const { data: members, error } = await supabase
+                .from('household_members')
+                .select('household_id')
+                .eq('user_id', user.id)
+                .limit(1);
 
-        if (member) {
-            setHouseholdId(member.household_id);
+            if (error) {
+                console.error('Error fetching member:', error);
+                setLoading(false);
+                return;
+            }
+
+            if (members && members.length > 0) {
+                setHouseholdId(members[0].household_id);
+            } else {
+                console.log('No household member found');
+                setLoading(false);
+            }
+        } catch (e) {
+            console.error('Exception in fetchHousehold:', e);
+            setLoading(false);
         }
     }
 
     async function fetchRecipes() {
-        if (!householdId) return;
+        if (!householdId) {
+            setLoading(false);
+            return;
+        }
         const { data, error } = await supabase
             .from('hall_of_fame')
             .select('*')
@@ -49,12 +70,16 @@ export default function HallOfFame() {
 
         if (data) {
             setRecipes(data);
-            setLoading(false);
         }
+        setLoading(false);
     }
 
     async function addRecipe() {
-        if (!newRecipeName.trim() || !householdId) return;
+        if (!householdId) {
+            Alert.alert('Error', 'Geen huishouden gevonden. Probeer opnieuw te laden.');
+            return;
+        }
+        if (!newRecipeName.trim()) return;
 
         const name = newRecipeName.trim();
         const link = newRecipeLink.trim() || null;
@@ -267,7 +292,7 @@ const styles = StyleSheet.create({
         marginTop: 40,
     },
     emptyListText: {
-        color: KribTheme.colors.text.secondary,
+        color: '#FFFFFF',
         fontStyle: 'italic',
     },
 });

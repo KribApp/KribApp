@@ -15,7 +15,14 @@ export default function HouseInfo() {
     const [loading, setLoading] = useState(true);
     const [householdId, setHouseholdId] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
-    const [address, setAddress] = useState<string | null>(null);
+    const [address, setAddress] = useState<{
+        street: string | null;
+        house_number: string | null;
+        postal_code: string | null;
+        city: string | null;
+        province: string | null;
+        country: string | null;
+    } | null>(null);
 
     // Info Section
     const [infoText, setInfoText] = useState('');
@@ -44,14 +51,30 @@ export default function HouseInfo() {
 
         const { data: members, error } = await supabase
             .from('household_members')
-            .select('household_id, households(address)')
+            .select('household_id, households(street, house_number, postal_code, city, province, country)')
             .eq('user_id', user.id)
             .limit(1);
 
         if (members && members.length > 0) {
             setHouseholdId(members[0].household_id);
+            const h = members[0].households;
             // @ts-ignore
-            setAddress(members[0].households?.address);
+            if (h) {
+                // Supabase might return an array or an object depending on the query structure
+                // @ts-ignore
+                const householdData = Array.isArray(h) ? h[0] : h;
+
+                if (householdData) {
+                    setAddress({
+                        street: householdData.street,
+                        house_number: householdData.house_number,
+                        postal_code: householdData.postal_code,
+                        city: householdData.city,
+                        province: householdData.province,
+                        country: householdData.country
+                    });
+                }
+            }
         }
     }
 
@@ -230,11 +253,11 @@ export default function HouseInfo() {
             <StatusBar style="dark" />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}>
-                    <Menu size={24} color="#FFFFFF" />
+                    <Menu size={24} color="#5D5FEF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Huis Info</Text>
                 <TouchableOpacity onPress={() => router.push('/(app)/house-settings')}>
-                    <Settings size={24} color="#FFFFFF" />
+                    <Settings size={24} color="#5D5FEF" />
                 </TouchableOpacity>
             </View>
 
@@ -245,12 +268,23 @@ export default function HouseInfo() {
             >
                 <ScrollView contentContainerStyle={styles.content}>
                     {/* Address Section */}
+                    {/* Address Section */}
                     {address && (
                         <View style={styles.addressCard}>
                             <MapPin size={24} color={KribTheme.colors.text.secondary} />
-                            <Text style={styles.addressText}>
-                                {address || 'Geen adres ingesteld'}
-                            </Text>
+                            <View style={{ marginLeft: 12, flex: 1 }}>
+                                <Text style={styles.addressText}>
+                                    {address.street} {address.house_number}
+                                </Text>
+                                <Text style={styles.addressSubText}>
+                                    {address.postal_code} {address.city}
+                                </Text>
+                                {(address.province || address.country) && (
+                                    <Text style={styles.addressSubText}>
+                                        {[address.province, address.country].filter(Boolean).join(', ')}
+                                    </Text>
+                                )}
+                            </View>
                         </View>
                     )}
 
@@ -262,11 +296,11 @@ export default function HouseInfo() {
                             </View>
                             <TouchableOpacity onPress={handleInfoButton} disabled={savingInfo} style={styles.saveButton}>
                                 {savingInfo ? (
-                                    <ActivityIndicator size="small" color={KribTheme.colors.text.inverse} />
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : isEditing ? (
-                                    <Save size={20} color={KribTheme.colors.text.inverse} />
+                                    <Save size={20} color="#FFFFFF" />
                                 ) : (
-                                    <Edit2 size={20} color={KribTheme.colors.text.inverse} />
+                                    <Edit2 size={20} color="#FFFFFF" />
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -319,7 +353,7 @@ export default function HouseInfo() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: KribTheme.colors.background,
+        backgroundColor: '#FFFFFF',
     },
     header: {
         flexDirection: 'row',
@@ -328,12 +362,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 60,
         paddingBottom: 16,
-        backgroundColor: KribTheme.colors.background,
+        backgroundColor: '#FFFFFF',
     },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#FFFFFF',
+        color: '#5D5FEF',
     },
     content: {
         padding: 16,
@@ -341,17 +375,23 @@ const styles = StyleSheet.create({
     addressCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: KribTheme.colors.surface,
+        backgroundColor: '#FFFFFF',
         padding: 16,
         borderRadius: KribTheme.borderRadius.l,
         marginBottom: 24,
+        borderWidth: 1,
+        borderColor: '#5D5FEF',
         ...KribTheme.shadows.card,
     },
     addressText: {
-        marginLeft: 12,
-        fontSize: 16,
-        color: KribTheme.colors.text.primary,
-        flex: 1,
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#5D5FEF',
+        marginBottom: 2,
+    },
+    addressSubText: {
+        fontSize: 14,
+        color: '#6B7280',
     },
     section: {
         marginBottom: 32,
@@ -368,10 +408,11 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#FFFFFF',
+        color: '#5D5FEF',
+        textAlign: 'left',
     },
     saveButton: {
-        backgroundColor: KribTheme.colors.primary,
+        backgroundColor: '#5D5FEF',
         width: 36,
         height: 36,
         borderRadius: 18,
@@ -379,16 +420,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     infoCard: {
-        backgroundColor: KribTheme.colors.surface,
+        backgroundColor: '#FFFFFF',
         padding: 16,
         borderRadius: KribTheme.borderRadius.l,
         minHeight: 120,
         marginBottom: 24,
+        borderWidth: 1,
+        borderColor: '#5D5FEF',
         ...KribTheme.shadows.card,
     },
     infoInput: {
         fontSize: 16,
-        color: KribTheme.colors.text.primary,
+        color: '#111827',
         minHeight: 120,
     },
     membersList: {
@@ -398,10 +441,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: KribTheme.colors.surface,
+        backgroundColor: '#FFFFFF',
         padding: 16,
         borderRadius: KribTheme.borderRadius.l,
         marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#5D5FEF',
         ...KribTheme.shadows.card,
     },
     memberInfo: {
@@ -413,18 +458,18 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: KribTheme.colors.background,
+        backgroundColor: '#F3F4F6',
         justifyContent: 'center',
         alignItems: 'center',
     },
     memberName: {
         fontSize: 16,
         fontWeight: '600',
-        color: KribTheme.colors.text.primary,
+        color: '#5D5FEF',
     },
     memberEmail: {
         fontSize: 12,
-        color: KribTheme.colors.text.secondary,
+        color: '#6B7280',
     },
     roleBadge: {
         flexDirection: 'row',
@@ -434,7 +479,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     roleAdmin: {
-        backgroundColor: '#2563EB',
+        backgroundColor: '#5D5FEF',
     },
     roleMember: {
         backgroundColor: '#E5E7EB',

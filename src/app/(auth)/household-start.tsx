@@ -22,7 +22,7 @@ export default function HouseholdStart() {
                     </View>
                     <View style={styles.textContainer}>
                         <Text style={styles.cardTitle}>Nieuw Huis Starten</Text>
-                        <Text style={styles.cardDescription}>Ik ben de eerste (Pionier)</Text>
+                        <Text style={styles.cardDescription}>Ik ben de eerste</Text>
                     </View>
                 </TouchableOpacity>
 
@@ -34,8 +34,8 @@ export default function HouseholdStart() {
                         <UserPlus size={32} color="#F59E0B" />
                     </View>
                     <View style={styles.textContainer}>
-                        <Text style={styles.cardTitle}>Huis Joinen</Text>
-                        <Text style={styles.cardDescription}>Ik heb een code (Volger)</Text>
+                        <Text style={styles.cardTitle}>Bij een huis voegen</Text>
+                        <Text style={styles.cardDescription}>Ik heb een code</Text>
                     </View>
                 </TouchableOpacity>
             </View>

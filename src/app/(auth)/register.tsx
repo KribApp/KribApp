@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Link, router } from 'expo-router';
 import { supabase } from '../../services/supabase';
 import { StatusBar } from 'expo-status-bar';
@@ -144,7 +144,10 @@ export default function Register() {
 
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>Wachtwoord bevestigen</Text>
-                        <View style={styles.passwordContainer}>
+                        <View style={[
+                            styles.passwordContainer,
+                            confirmPassword.length > 0 && password !== confirmPassword && { borderColor: '#EF4444' }
+                        ]}>
                             <TextInput
                                 ref={confirmPasswordRef}
                                 style={styles.passwordInput}
@@ -155,8 +158,8 @@ export default function Register() {
                                 secureTextEntry={!showConfirmPassword}
                                 autoCapitalize="none"
                                 returnKeyType="done"
-                                onSubmitEditing={signUpWithEmail}
-                                blurOnSubmit={false}
+                                onSubmitEditing={() => Keyboard.dismiss()}
+                                blurOnSubmit={true}
                             />
                             <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
                                 {showConfirmPassword ? (
@@ -166,6 +169,11 @@ export default function Register() {
                                 )}
                             </TouchableOpacity>
                         </View>
+                        {confirmPassword.length > 0 && password !== confirmPassword && (
+                            <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 4 }}>
+                                Wachtwoorden komen niet overeen
+                            </Text>
+                        )}
                     </View>
 
                     <View style={styles.inputContainer}>

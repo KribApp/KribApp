@@ -36,8 +36,10 @@ export default function Index() {
 
         if (!profile) {
             // Profile missing (e.g. after DB reset). 
-            // Do NOT redirect. Let HouseholdContext handle the sign out / error.
+            // Sign out and redirect to login.
+            await supabase.auth.signOut();
             setLoading(false);
+            router.replace('/(auth)/login');
             return;
         }
 

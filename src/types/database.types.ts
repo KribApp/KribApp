@@ -49,6 +49,12 @@ export interface Database {
                     photo_url: string | null
                     timezone: string | null
                     created_at: string
+                    street: string | null
+                    house_number: string | null
+                    postal_code: string | null
+                    city: string | null
+                    province: string | null
+                    country: string | null
                 }
                 Insert: {
                     id?: string
@@ -60,6 +66,12 @@ export interface Database {
                     photo_url?: string | null
                     timezone?: string | null
                     created_at?: string
+                    street?: string | null
+                    house_number?: string | null
+                    postal_code?: string | null
+                    city?: string | null
+                    province?: string | null
+                    country?: string | null
                 }
                 Update: {
                     id?: string
@@ -71,6 +83,12 @@ export interface Database {
                     photo_url?: string | null
                     timezone?: string | null
                     created_at?: string
+                    street?: string | null
+                    house_number?: string | null
+                    postal_code?: string | null
+                    city?: string | null
+                    province?: string | null
+                    country?: string | null
                 }
             }
             household_members: {
@@ -134,6 +152,7 @@ export interface Database {
                     is_pinned: boolean | null
                     added_by_user_id: string | null
                     created_at: string
+                    position: number
                 }
                 Insert: {
                     id?: string
@@ -143,6 +162,7 @@ export interface Database {
                     is_pinned?: boolean | null
                     added_by_user_id?: string | null
                     created_at?: string
+                    position?: number
                 }
                 Update: {
                     id?: string
@@ -152,6 +172,7 @@ export interface Database {
                     is_pinned?: boolean | null
                     added_by_user_id?: string | null
                     created_at?: string
+                    position?: number
                 }
             }
             hall_of_fame: {

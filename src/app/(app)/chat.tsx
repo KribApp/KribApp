@@ -31,34 +31,54 @@ export default function Chat() {
     }, [householdId]);
 
     async function fetchHouseholdAndUser() {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        setUserId(user.id);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+            setUserId(user.id);
 
-        const { data: member } = await supabase
-            .from('household_members')
-            .select('household_id')
-            .eq('user_id', user.id)
-            .single();
+            const { data: member } = await supabase
+                .from('household_members')
+                .select('household_id')
+                .eq('user_id', user.id)
+                .single();
 
-        if (member) {
-            setHouseholdId(member.household_id);
+            if (member) {
+                setHouseholdId(member.household_id);
+            } else {
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error('Error fetching household:', error);
+            setLoading(false);
         }
     }
 
     async function fetchMessages() {
-        if (!householdId) return;
-
-        const { data, error } = await supabase
-            .from('chat_messages')
-            .select('*, users(username)')
-            .eq('household_id', householdId)
-            .order('created_at', { ascending: true });
-
-        if (data) {
-            setMessages(data);
+        if (!householdId) {
             setLoading(false);
-            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('chat_messages')
+                .select('*, users(username)')
+                .eq('household_id', householdId)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+
+            if (data) {
+                setMessages(data);
+                setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+            }
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -294,7 +314,7 @@ const styles = StyleSheet.create({
         marginTop: 40,
     },
     emptyChatText: {
-        color: KribTheme.colors.text.secondary,
+        color: '#FFFFFF',
         fontStyle: 'italic',
     },
     messageContainer: {

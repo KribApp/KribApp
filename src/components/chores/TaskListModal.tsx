@@ -96,6 +96,9 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 18,
         fontWeight: 'bold',
+        color: '#312e81', // Indigo 900
+        textAlign: 'center',
+        flex: 1, // Ensure it takes space to center
     },
     addChoreForm: {
         backgroundColor: '#FFFFFF',

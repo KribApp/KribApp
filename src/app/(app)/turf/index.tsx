@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         textAlign: 'center',
-        color: KribTheme.colors.text.secondary,
+        color: '#FFFFFF',
         fontStyle: 'italic',
         marginTop: 24,
     },

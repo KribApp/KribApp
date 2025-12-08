@@ -22,6 +22,8 @@ export default function CreateHousehold() {
     const [streetAndNumber, setStreetAndNumber] = useState('');
     const [postalCode, setPostalCode] = useState('');
     const [city, setCity] = useState('');
+    const [province, setProvince] = useState('');
+    const [country, setCountry] = useState('');
     const { refreshHousehold } = useHousehold();
 
     const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -31,11 +33,10 @@ export default function CreateHousehold() {
     const [loading, setLoading] = useState(false);
 
     const addressRef = useRef<TextInput>(null);
+    const postalCodeRef = useRef<TextInput>(null);
     const cityRef = useRef<TextInput>(null);
-
-    // New states for invite functionality
-    const [newEmail, setNewEmail] = useState('');
-    const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
+    const provinceRef = useRef<TextInput>(null);
+    const countryRef = useRef<TextInput>(null);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -76,11 +77,15 @@ export default function CreateHousehold() {
         const number = address.house_number || '';
         const postcode = address.postcode || '';
         const town = address.city || address.town || address.village || address.municipality || '';
+        const state = address.state || address.province || '';
+        const countryName = address.country || '';
 
         // Store full item to get lat/lon later
         setStreetAndNumber(`${street} ${number}`.trim());
         setPostalCode(postcode);
         setCity(town);
+        setProvince(state);
+        setCountry(countryName);
 
         // We'll use the last selected item for timezone lookup
         // Ideally we should store this in state, but for now we can just use the item passed here
@@ -102,18 +107,6 @@ export default function CreateHousehold() {
         return Math.random().toString(36).substring(2, 8).toUpperCase();
     }
 
-    const addEmail = () => {
-        if (newEmail && !invitedEmails.includes(newEmail)) {
-            setInvitedEmails([...invitedEmails, newEmail]);
-            setNewEmail('');
-            Keyboard.dismiss();
-        }
-    };
-
-    const removeEmail = (emailToRemove: string) => {
-        setInvitedEmails(invitedEmails.filter(email => email !== emailToRemove));
-    };
-
     async function createHousehold() {
         if (!name) {
             Alert.alert('Fout', 'Vul een naam in voor je huis.');
@@ -131,31 +124,55 @@ export default function CreateHousehold() {
         if (!user) return;
 
         const inviteCode = generateInviteCode();
-        const fullAddress = streetAndNumber && postalCode && city ? `${streetAndNumber}, ${postalCode} ${city}` : null;
+        // Construct full address string
+        const addressParts = [streetAndNumber, postalCode, city, province, country].filter(Boolean);
+        const fullAddress = addressParts.join(', ');
 
         let timezone = 'Europe/Amsterdam'; // Default
-        let country = 'Netherlands';
+        let countryName = 'Netherlands';
 
         if (selectedLocation) {
             try {
                 timezone = tzlookup(selectedLocation.lat, selectedLocation.lon);
-                country = selectedLocation.country || country;
+                countryName = selectedLocation.country || countryName;
             } catch (e) {
                 console.warn('Could not determine timezone, using default', e);
             }
         }
 
         // 1. Create Household
+        // Split street and number roughly (this is a simple heuristic, ideally we use the structured data from nominatim if available)
+        // Since we only have the string streetAndNumber here if user typed manually, we might just put it all in street or try to split.
+        // But wait, we set streetAndNumber from nominatim result too.
+        // Let's try to use the state if we can, but we don't have separate state for street/number.
+        // For now, let's put the full streetAndNumber string into 'street' and leave 'house_number' empty if we can't parse it easily,
+        // OR just save streetAndNumber to street.
+        // Actually, the user requested "Straatnaam en huisnummer" as one field.
+        // Let's just save that entire string to 'street' for now, or 'street' and 'house_number' if we want to be strict.
+        // Given the UI has one field, let's save it to 'street' and maybe 'house_number' if we can extract it.
+        // Simple regex to extract last number?
+        const match = streetAndNumber.match(/^(.+?)\s+(\d+[\w-]*)$/);
+        let streetVal = streetAndNumber;
+        let numberVal = '';
+        if (match) {
+            streetVal = match[1];
+            numberVal = match[2];
+        }
+
         const { data: household, error: houseError } = await supabase
             .from('households')
             .insert([
                 {
                     name,
-                    address: fullAddress,
+                    street: streetVal,
+                    house_number: numberVal,
+                    postal_code: postalCode,
+                    city: city,
+                    province: province,
+                    country: countryName,
                     admin_user_id: user.id,
                     invite_code: inviteCode,
                     timezone: timezone,
-                    country: country
                 }
             ])
             .select()
@@ -184,25 +201,7 @@ export default function CreateHousehold() {
             return;
         }
 
-        // 3. Invite additional members (if any)
-        if (invitedEmails.length > 0) {
-            const invitePromises = invitedEmails.map(async (email) => {
-                const { error: inviteError } = await supabase
-                    .from('household_invites')
-                    .insert([
-                        {
-                            household_id: household.id,
-                            email: email,
-                            invited_by_user_id: user.id,
-                            invite_code: inviteCode, // Use the same invite code for all
-                        }
-                    ]);
-                if (inviteError) {
-                    console.error(`Error inviting ${email}:`, inviteError.message);
-                }
-            });
-            await Promise.all(invitePromises);
-        }
+
 
         setLoading(false);
         Alert.alert('Succes', `Huis '${name}' aangemaakt! Je code is: ${inviteCode}`);
@@ -238,7 +237,7 @@ export default function CreateHousehold() {
                     </View>
 
                     <View style={[styles.inputContainer, { zIndex: 10 }]}>
-                        <Text style={styles.label}>Adres (Optioneel)</Text>
+                        <Text style={styles.label}>Straatnaam en huisnummer</Text>
                         <TextInput
                             ref={addressRef}
                             style={styles.input}
@@ -250,7 +249,7 @@ export default function CreateHousehold() {
                             placeholder="Straatnaam 123"
                             placeholderTextColor={KribTheme.colors.text.secondary}
                             returnKeyType="next"
-                            onSubmitEditing={() => cityRef.current?.focus()}
+                            onSubmitEditing={() => postalCodeRef.current?.focus()}
                             blurOnSubmit={false}
                             onFocus={() => setShowSuggestions(true)}
                         />
@@ -273,8 +272,25 @@ export default function CreateHousehold() {
                         )}
                     </View>
 
+
+
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Stad (Optioneel)</Text>
+                        <Text style={styles.label}>Postcode</Text>
+                        <TextInput
+                            ref={postalCodeRef}
+                            style={styles.input}
+                            onChangeText={setPostalCode}
+                            value={postalCode}
+                            placeholder="1234 AB"
+                            placeholderTextColor={KribTheme.colors.text.secondary}
+                            returnKeyType="next"
+                            onSubmitEditing={() => cityRef.current?.focus()}
+                            blurOnSubmit={false}
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Stad</Text>
                         <TextInput
                             ref={cityRef}
                             style={styles.input}
@@ -282,45 +298,42 @@ export default function CreateHousehold() {
                             value={city}
                             placeholder="Amsterdam"
                             placeholderTextColor={KribTheme.colors.text.secondary}
+                            returnKeyType="next"
+                            onSubmitEditing={() => provinceRef.current?.focus()}
+                            blurOnSubmit={false}
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Provincie</Text>
+                        <TextInput
+                            ref={provinceRef}
+                            style={styles.input}
+                            onChangeText={setProvince}
+                            value={province}
+                            placeholder="Noord-Holland"
+                            placeholderTextColor={KribTheme.colors.text.secondary}
+                            returnKeyType="next"
+                            onSubmitEditing={() => countryRef.current?.focus()}
+                            blurOnSubmit={false}
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Land</Text>
+                        <TextInput
+                            ref={countryRef}
+                            style={styles.input}
+                            onChangeText={setCountry}
+                            value={country}
+                            placeholder="Nederland"
+                            placeholderTextColor={KribTheme.colors.text.secondary}
                             returnKeyType="done"
                             onSubmitEditing={Keyboard.dismiss}
                         />
                     </View>
 
-                    <View style={styles.divider}>
-                        <Text style={styles.dividerText}>Huisgenoten Uitnodigen (Optioneel)</Text>
-                    </View>
 
-                    <View style={styles.inviteContainer}>
-                        <TextInput
-                            style={styles.inviteInput}
-                            onChangeText={setNewEmail}
-                            value={newEmail}
-                            placeholder="huisgenoot@email.nl"
-                            placeholderTextColor={KribTheme.colors.text.secondary}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            returnKeyType="done"
-                            onSubmitEditing={addEmail}
-                        />
-                        <TouchableOpacity style={styles.addButton} onPress={addEmail}>
-                            <Text style={styles.addButtonText}>+</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <FlatList
-                        data={invitedEmails}
-                        keyExtractor={(item) => item}
-                        renderItem={({ item }) => (
-                            <View style={styles.emailItem}>
-                                <Text style={styles.emailText}>{item}</Text>
-                                <TouchableOpacity onPress={() => removeEmail(item)}>
-                                    <Text style={styles.removeText}>Verwijder</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                        style={styles.emailList}
-                    />
 
                     <TouchableOpacity
                         style={styles.button}
@@ -440,65 +453,5 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#374151',
     },
-    divider: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 20,
-    },
-    dividerText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#6B7280',
-        width: '100%',
-        textAlign: 'center',
-    },
-    inviteContainer: {
-        flexDirection: 'row',
-        gap: 8,
-        marginBottom: 16,
-    },
-    inviteInput: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: '#D1D5DB',
-        borderRadius: 12,
-        padding: 16,
-        fontSize: 16,
-        color: '#111827',
-    },
-    addButton: {
-        backgroundColor: '#10B981',
-        width: 56,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    addButtonText: {
-        color: '#FFFFFF',
-        fontSize: 24,
-        fontWeight: 'bold',
-    },
-    emailList: {
-        maxHeight: 150,
-        marginBottom: 16,
-    },
-    emailItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: '#F3F4F6',
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 8,
-    },
-    emailText: {
-        fontSize: 14,
-        color: '#374151',
-    },
-    removeText: {
-        fontSize: 14,
-        color: '#EF4444',
-        fontWeight: '600',
-    },
+
 });

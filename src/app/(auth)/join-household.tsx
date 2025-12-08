@@ -69,7 +69,7 @@ export default function JoinHousehold() {
         >
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.container}>
-                    <StatusBar style="light" />
+                    <StatusBar style="dark" />
                     <View style={styles.header}>
                         <Text style={styles.title}>Huis Joinen</Text>
                         <Text style={styles.subtitle}>Voer de code in die je hebt gekregen.</Text>
@@ -115,7 +115,7 @@ export default function JoinHousehold() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#5D5FEF', // Indigo Background
+        backgroundColor: '#F9FAFB', // Light Background
         padding: 24,
         justifyContent: 'center',
     },
@@ -125,13 +125,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#FFFFFF', // White text
+        color: '#111827', // Dark text
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#FFFFFF', // White text
-        opacity: 0.9,
+        color: '#6B7280', // Gray text
     },
     form: {
         gap: 20,
@@ -142,12 +141,12 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#FFFFFF', // White text
+        color: '#374151', // Dark gray text
     },
     input: {
         backgroundColor: '#FFFFFF',
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: '#D1D5DB',
         borderRadius: 12,
         padding: 16,
         fontSize: 16,
@@ -175,8 +174,7 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     backButtonText: {
-        color: '#FFFFFF', // White text
+        color: '#6B7280', // Gray text
         fontSize: 16,
-        opacity: 0.8,
     }
 });

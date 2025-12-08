@@ -35,13 +35,21 @@ export function DayDetail({ selectedDate, chores, canManage, onAssignTask, onTog
         );
     };
 
+    const isPastDate = (date: Date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const compareDate = new Date(date);
+        compareDate.setHours(0, 0, 0, 0);
+        return compareDate < today;
+    };
+
     return (
         <View style={styles.dayDetailContainer}>
             <View style={styles.dayDetailHeader}>
                 <Text style={styles.dayDetailTitle}>
                     {selectedDate.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </Text>
-                {canManage && (
+                {canManage && !isPastDate(selectedDate) && (
                     <TouchableOpacity
                         style={styles.assignButton}
                         onPress={onAssignTask}
