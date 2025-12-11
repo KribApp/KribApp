@@ -2,22 +2,30 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityInd
 import { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useHousehold } from '../../context/HouseholdContext';
-import { Save, ArrowLeft, X, Clock } from 'lucide-react-native';
+import { Save, ArrowLeft, X, Clock, Camera, Link as LinkIcon, Image as ImageIcon } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { KribTheme } from '../../theme/theme';
+import * as ImagePicker from 'expo-image-picker';
+import { MediaTypeOptions } from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
+import { Image } from 'expo-image';
+import { Strings } from '../../constants/strings';
 
 export default function HouseSettings() {
     const router = useRouter();
-    const { household, member, loading: contextLoading } = useHousehold();
+    const { household, member, loading: contextLoading, refreshHousehold } = useHousehold();
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
 
     const isAdmin = member?.role === 'ADMIN';
     const householdId = household?.id;
 
     // State
     const [photoUrl, setPhotoUrl] = useState('');
+    const [showLinkInput, setShowLinkInput] = useState(false);
     const [name, setName] = useState('');
     const [street, setStreet] = useState('');
     const [houseNumber, setHouseNumber] = useState('');
@@ -45,8 +53,87 @@ export default function HouseSettings() {
             setNoResponseAction(household.config_no_response_action || 'NO_EAT');
             setInviteCode(household.invite_code || '');
             setDeadlineTime(household.config_deadline_time || '16:00:00');
+            // If it matches a storage URL, assume upload mode (hide link input initially)
+            // But if it's a raw generic URL, maybe show link input?
+            // For simplicity, always hide link input initially unless empty
+            setShowLinkInput(!household.photo_url);
         }
     }, [household]);
+
+    const uploadImage = async (uri: string) => {
+        try {
+            setUploading(true);
+
+            // Usage of fetch().blob() is unreliable in React Native with some engines.
+            // Using FileSystem + base64 is robust.
+            const base64 = await FileSystem.readAsStringAsync(uri, {
+                encoding: 'base64',
+            });
+            const arrayBuffer = decode(base64);
+
+            const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+            const fileName = `${householdId}/${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('households')
+                .upload(filePath, arrayBuffer, {
+                    contentType: `image/${fileExt}`,
+                    upsert: true,
+                });
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data } = supabase.storage.from('households').getPublicUrl(filePath);
+            return data.publicUrl;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            Alert.alert(Strings.common.error, Strings.household.uploadError);
+            return null;
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handlePickImage = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: MediaTypeOptions.Images, // Fixed deprecated property
+            allowsEditing: true,
+            aspect: [16, 9],
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            const uploadedUrl = await uploadImage(result.assets[0].uri);
+            if (uploadedUrl) {
+                setPhotoUrl(uploadedUrl);
+                setShowLinkInput(false);
+            }
+        }
+    };
+
+    const handleChangePhoto = () => {
+        if (!isAdmin) return;
+
+        Alert.alert(Strings.household.changePhoto, undefined, [
+            {
+                text: Strings.household.uploadPhoto,
+                onPress: handlePickImage,
+                style: 'default',
+            },
+            {
+                text: Strings.household.enterUrl,
+                onPress: () => setShowLinkInput(true),
+                style: 'default',
+            },
+            {
+                text: Strings.common.cancel,
+                style: 'cancel',
+            },
+        ]);
+    };
 
     async function handleSave() {
         if (!isAdmin) {
@@ -54,35 +141,24 @@ export default function HouseSettings() {
             return;
         }
 
-        // Validate time format HH:MM or HH:MM:SS
-        // const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/;
-        // if (!timeRegex.test(deadlineTime)) {
-        //     Alert.alert('Ongeldig formaat', 'Gebruik HH:MM (bijv. 16:00)');
-        //     return;
-        // }
-
         setSaving(true);
 
-        // Update Photo and Config
         if (householdId) {
             const { error } = await supabase
                 .from('households')
                 .update({
                     name,
-                    street,
-                    house_number: houseNumber,
-                    postal_code: postalCode,
-                    city,
-                    province,
-                    country,
-                    timezone,
                     photo_url: photoUrl,
                     config_no_response_action: noResponseAction,
                     config_deadline_time: deadlineTime
                 } as any)
                 .eq('id', householdId);
 
-            if (error) console.error('Error updating settings:', error);
+            if (error) {
+                console.error('Error updating settings:', error);
+            } else {
+                await refreshHousehold();
+            }
         }
 
         setSaving(false);
@@ -175,61 +251,59 @@ export default function HouseSettings() {
                                 editable={isAdmin}
                             />
                         </View>
+
+                        {/* Address fields - Read only, set during creation */}
+                        <Text style={styles.addressNote}>Adres (niet te wijzigen na aanmaken)</Text>
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Straat</Text>
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, styles.disabledInput]}
                                 value={street}
-                                onChangeText={setStreet}
                                 placeholder="Straatnaam"
                                 placeholderTextColor={KribTheme.colors.text.secondary}
-                                editable={isAdmin}
+                                editable={false}
                             />
                         </View>
                         <View style={styles.row}>
                             <View style={[styles.inputGroup, { flex: 1 }]}>
                                 <Text style={styles.label}>Huisnummer</Text>
                                 <TextInput
-                                    style={styles.textInput}
+                                    style={[styles.textInput, styles.disabledInput]}
                                     value={houseNumber}
-                                    onChangeText={setHouseNumber}
                                     placeholder="Nr"
                                     placeholderTextColor={KribTheme.colors.text.secondary}
-                                    editable={isAdmin}
+                                    editable={false}
                                 />
                             </View>
                             <View style={[styles.inputGroup, { flex: 2, marginLeft: 12 }]}>
                                 <Text style={styles.label}>Postcode</Text>
                                 <TextInput
-                                    style={styles.textInput}
+                                    style={[styles.textInput, styles.disabledInput]}
                                     value={postalCode}
-                                    onChangeText={setPostalCode}
                                     placeholder="1234 AB"
                                     placeholderTextColor={KribTheme.colors.text.secondary}
-                                    editable={isAdmin}
+                                    editable={false}
                                 />
                             </View>
                         </View>
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Stad</Text>
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, styles.disabledInput]}
                                 value={city}
-                                onChangeText={setCity}
                                 placeholder="Stad"
                                 placeholderTextColor={KribTheme.colors.text.secondary}
-                                editable={isAdmin}
+                                editable={false}
                             />
                         </View>
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Tijdzone</Text>
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, styles.disabledInput]}
                                 value={timezone}
-                                onChangeText={setTimezone}
                                 placeholder="Europe/Amsterdam"
                                 placeholderTextColor={KribTheme.colors.text.secondary}
-                                editable={isAdmin}
+                                editable={false}
                             />
                         </View>
                     </View>
@@ -247,104 +321,139 @@ export default function HouseSettings() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Huis Foto</Text>
                         <Text style={styles.sectionDescription}>
-                            Plak een URL van een afbeelding voor op de homepage.
+                            Kies een foto voor op de homepage of plak een URL.
                         </Text>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Foto URL</Text>
-                            <View style={styles.inputWrapper}>
-                                <TextInput
-                                    style={[styles.input, styles.textInput]}
-                                    value={photoUrl}
-                                    onChangeText={setPhotoUrl}
-                                    placeholder="https://example.com/image.jpg"
-                                    placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                                    editable={isAdmin}
-                                    autoCapitalize="none"
-                                    returnKeyType="done"
-                                    onSubmitEditing={handleSave}
+
+                        <View style={styles.photoContainer}>
+                            {photoUrl ? (
+                                <Image
+                                    source={{ uri: photoUrl }}
+                                    style={styles.photoPreview}
+                                    contentFit="cover"
                                 />
-                                {photoUrl.length > 0 && isAdmin && (
-                                    <TouchableOpacity onPress={() => setPhotoUrl('')} style={styles.clearButton}>
-                                        <X size={20} color="#9CA3AF" />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
+                            ) : (
+                                <View style={[styles.photoPreview, styles.photoPlaceholder]}>
+                                    <ImageIcon size={32} color={KribTheme.colors.text.secondary} />
+                                </View>
+                            )}
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Deadline Avondeten (HH:MM)</Text>
-                            <View style={styles.inputWrapper}>
-                                {Platform.OS === 'android' && (
+                            {isAdmin && (
+                                <View style={styles.photoActions}>
                                     <TouchableOpacity
-                                        style={[styles.input, styles.textInput, { justifyContent: 'center' }]}
-                                        onPress={() => isAdmin && setShowTimePicker(true)}
+                                        style={styles.photoButton}
+                                        onPress={handleChangePhoto}
+                                        disabled={uploading}
                                     >
-                                        <Text style={{ color: '#111827' }}>{deadlineTime.substring(0, 5)}</Text>
+                                        {uploading ? (
+                                            <ActivityIndicator size="small" color="#FFFFFF" />
+                                        ) : (
+                                            <>
+                                                <Camera size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                                                <Text style={styles.photoButtonText}>{Strings.household.changePhoto}</Text>
+                                            </>
+                                        )}
                                     </TouchableOpacity>
-                                )}
-                                {Platform.OS === 'ios' && (
-                                    <DateTimePicker
-                                        value={(() => {
-                                            const [h, m] = deadlineTime.split(':');
-                                            const d = new Date();
-                                            d.setHours(parseInt(h), parseInt(m));
-                                            return d;
-                                        })()}
-                                        mode="time"
-                                        display="default"
-                                        onChange={(event, selectedDate) => {
-                                            if (selectedDate) {
-                                                const hours = selectedDate.getHours().toString().padStart(2, '0');
-                                                const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-                                                setDeadlineTime(`${hours}:${minutes}:00`);
-                                            }
-                                        }}
-                                        style={{ alignSelf: 'flex-start' }}
-                                        disabled={!isAdmin}
-                                        themeVariant="light"
-                                    />
-                                )}
-                                {showTimePicker && Platform.OS === 'android' && (
-                                    <DateTimePicker
-                                        value={(() => {
-                                            const [h, m] = deadlineTime.split(':');
-                                            const d = new Date();
-                                            d.setHours(parseInt(h), parseInt(m));
-                                            return d;
-                                        })()}
-                                        mode="time"
-                                        is24Hour={true}
-                                        display="default"
-                                        onChange={(event, selectedDate) => {
-                                            setShowTimePicker(false);
-                                            if (selectedDate) {
-                                                const hours = selectedDate.getHours().toString().padStart(2, '0');
-                                                const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-                                                setDeadlineTime(`${hours}:${minutes}:00`);
-                                            }
-                                        }}
-                                    />
-                                )}
-                            </View>
+                                </View>
+                            )}
                         </View>
 
-                        {isAdmin && (
-                            <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-                                {saving ? (
-                                    <ActivityIndicator color="#FFFFFF" />
-                                ) : (
-                                    <>
-                                        <Save size={20} color="#FFFFFF" />
-                                        <Text style={styles.saveButtonText}>Opslaan</Text>
-                                    </>
-                                )}
-                            </TouchableOpacity>
-                        )}
-
-                        {!isAdmin && (
-                            <Text style={styles.warningText}>Alleen beheerders kunnen deze instellingen wijzigen.</Text>
+                        {showLinkInput && isAdmin && (
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.label}>Foto URL</Text>
+                                <View style={styles.inputWrapper}>
+                                    <TextInput
+                                        style={[styles.input, styles.textInput]}
+                                        value={photoUrl}
+                                        onChangeText={setPhotoUrl}
+                                        placeholder="https://example.com/image.jpg"
+                                        placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                                        autoCapitalize="none"
+                                        returnKeyType="done"
+                                        onSubmitEditing={handleSave}
+                                    />
+                                    {photoUrl.length > 0 && (
+                                        <TouchableOpacity onPress={() => setPhotoUrl('')} style={styles.clearButton}>
+                                            <X size={20} color="#9CA3AF" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            </View>
                         )}
                     </View>
+
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Deadline Avondeten (HH:MM)</Text>
+                        <View style={styles.inputWrapper}>
+                            {Platform.OS === 'android' && (
+                                <TouchableOpacity
+                                    style={[styles.input, styles.textInput, { justifyContent: 'center' }]}
+                                    onPress={() => isAdmin && setShowTimePicker(true)}
+                                >
+                                    <Text style={{ color: '#111827' }}>{deadlineTime.substring(0, 5)}</Text>
+                                </TouchableOpacity>
+                            )}
+                            {Platform.OS === 'ios' && (
+                                <DateTimePicker
+                                    value={(() => {
+                                        const [h, m] = deadlineTime.split(':');
+                                        const d = new Date();
+                                        d.setHours(parseInt(h), parseInt(m));
+                                        return d;
+                                    })()}
+                                    mode="time"
+                                    display="default"
+                                    onChange={(event, selectedDate) => {
+                                        if (selectedDate) {
+                                            const hours = selectedDate.getHours().toString().padStart(2, '0');
+                                            const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
+                                            setDeadlineTime(`${hours}:${minutes}:00`);
+                                        }
+                                    }}
+                                    style={{ alignSelf: 'flex-start' }}
+                                    disabled={!isAdmin}
+                                    themeVariant="light"
+                                />
+                            )}
+                            {showTimePicker && Platform.OS === 'android' && (
+                                <DateTimePicker
+                                    value={(() => {
+                                        const [h, m] = deadlineTime.split(':');
+                                        const d = new Date();
+                                        d.setHours(parseInt(h), parseInt(m));
+                                        return d;
+                                    })()}
+                                    mode="time"
+                                    is24Hour={true}
+                                    display="default"
+                                    onChange={(event, selectedDate) => {
+                                        setShowTimePicker(false);
+                                        if (selectedDate) {
+                                            const hours = selectedDate.getHours().toString().padStart(2, '0');
+                                            const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
+                                            setDeadlineTime(`${hours}:${minutes}:00`);
+                                        }
+                                    }}
+                                />
+                            )}
+                        </View>
+                    </View>
+
+                    {isAdmin && (
+                        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+                            {saving ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <>
+                                    <Save size={20} color="#FFFFFF" />
+                                    <Text style={styles.saveButtonText}>Opslaan</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    )}
+
+                    {!isAdmin && (
+                        <Text style={styles.warningText}>Alleen beheerders kunnen deze instellingen wijzigen.</Text>
+                    )}
 
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Eetlijst Instellingen</Text>
@@ -465,6 +574,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingRight: 40,
     },
+    disabledInput: {
+        backgroundColor: '#F3F4F6',
+        borderColor: '#D1D5DB',
+        color: '#6B7280',
+    },
+    addressNote: {
+        fontSize: 12,
+        color: '#9CA3AF',
+        fontStyle: 'italic',
+        marginBottom: 12,
+        marginTop: 8,
+    },
     clearButton: {
         position: 'absolute',
         right: 10,
@@ -559,5 +680,40 @@ const styles = StyleSheet.create({
     },
     row: {
         flexDirection: 'row',
+    },
+    photoContainer: {
+        marginBottom: 16,
+        alignItems: 'center',
+    },
+    photoPreview: {
+        width: '100%',
+        height: 200,
+        borderRadius: 12,
+        backgroundColor: '#F3F4F6',
+        marginBottom: 16,
+    },
+    photoPlaceholder: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
+        borderStyle: 'dashed',
+    },
+    photoActions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    photoButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#5D5FEF',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 8,
+    },
+    photoButtonText: {
+        color: '#FFFFFF',
+        fontWeight: '600',
+        fontSize: 14,
     },
 });

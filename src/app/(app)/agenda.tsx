@@ -38,9 +38,11 @@ export default function Agenda() {
         if (householdId && selectedDate) {
             fetchAttendance();
             fetchDailyChores();
-            const subscription = subscribeToAttendance();
+            const attendanceSub = subscribeToAttendance();
+            const choresSub = subscribeToDailyChores();
             return () => {
-                subscription.unsubscribe();
+                attendanceSub.unsubscribe();
+                choresSub.unsubscribe();
             };
         }
     }, [householdId, selectedDate]);
@@ -107,7 +109,7 @@ export default function Agenda() {
 
     function subscribeToAttendance() {
         return supabase
-            .channel('dining_attendance')
+            .channel('dining_attendance_agenda')
             .on(
                 'postgres_changes',
                 {
@@ -118,6 +120,24 @@ export default function Agenda() {
                 },
                 () => {
                     fetchAttendance();
+                }
+            )
+            .subscribe();
+    }
+
+    function subscribeToDailyChores() {
+        return supabase
+            .channel('daily_chores_agenda')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'chores',
+                    filter: `household_id=eq.${householdId}`,
+                },
+                () => {
+                    fetchDailyChores();
                 }
             )
             .subscribe();

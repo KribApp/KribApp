@@ -1,2 +1,0 @@
-ALTER TABLE public.shopping_items
-ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0;

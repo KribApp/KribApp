@@ -1,6 +1,16 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming,
+    runOnJS,
+    interpolate,
+    Extrapolation
+} from 'react-native-reanimated';
 
 interface CalendarViewProps {
     currentMonth: Date;
@@ -10,10 +20,17 @@ interface CalendarViewProps {
     onDateSelect: (date: Date) => void;
 }
 
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
-
 export function CalendarView({ currentMonth, selectedDate, chores, onMonthChange, onDateSelect }: CalendarViewProps) {
+    const { width } = useWindowDimensions();
+    const translateX = useSharedValue(0);
+    const opacity = useSharedValue(1);
+
+    // Reset animation when month changes
+    useEffect(() => {
+        translateX.value = 0;
+        opacity.value = 1;
+    }, [currentMonth]);
+
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -97,26 +114,58 @@ export function CalendarView({ currentMonth, selectedDate, chores, onMonthChange
         );
     }
 
+    const handleMonthChange = (delta: number) => {
+        // Animate out in the direction of swipe
+        const targetX = delta > 0 ? -width : width;
+        translateX.value = withTiming(targetX, { duration: 100 }, () => {
+            runOnJS(onMonthChange)(delta);
+            // Reset position from opposite side
+            translateX.value = -targetX;
+            translateX.value = withSpring(0, { damping: 25, stiffness: 350 });
+        });
+    };
+
     const panGesture = Gesture.Pan()
+        .onUpdate((e) => {
+            // Follow finger during drag
+            translateX.value = e.translationX * 0.5; // Reduced sensitivity
+            opacity.value = interpolate(
+                Math.abs(e.translationX),
+                [0, 150],
+                [1, 0.7],
+                Extrapolation.CLAMP
+            );
+        })
         .onEnd((e) => {
-            if (e.translationX > 50) {
-                runOnJS(onMonthChange)(-1); // Swipe Right -> Prev Month
-            } else if (e.translationX < -50) {
-                runOnJS(onMonthChange)(1); // Swipe Left -> Next Month
+            if (e.translationX > 80) {
+                // Swipe Right -> Prev Month
+                runOnJS(handleMonthChange)(-1);
+            } else if (e.translationX < -80) {
+                // Swipe Left -> Next Month
+                runOnJS(handleMonthChange)(1);
+            } else {
+                // Snap back if not enough swipe
+                translateX.value = withSpring(0, { damping: 25, stiffness: 350 });
+                opacity.value = withTiming(1, { duration: 100 });
             }
         });
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: translateX.value }],
+        opacity: opacity.value,
+    }));
 
     return (
         <GestureDetector gesture={panGesture}>
             <View style={styles.calendarContainer}>
                 <View style={styles.calendarHeader}>
-                    <TouchableOpacity onPress={() => onMonthChange(-1)}>
+                    <TouchableOpacity onPress={() => handleMonthChange(-1)}>
                         <ChevronLeft size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.monthTitle}>
                         {currentMonth.toLocaleString('nl-NL', { month: 'long', year: 'numeric' })}
                     </Text>
-                    <TouchableOpacity onPress={() => onMonthChange(1)}>
+                    <TouchableOpacity onPress={() => handleMonthChange(1)}>
                         <ChevronRight size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
@@ -126,11 +175,11 @@ export function CalendarView({ currentMonth, selectedDate, chores, onMonthChange
                     ))}
                 </View>
 
-                <View style={styles.gridContainer}>
+                <Animated.View style={[styles.gridContainer, animatedStyle]}>
                     <View style={styles.daysGrid}>
                         {days}
                     </View>
-                </View>
+                </Animated.View>
             </View>
         </GestureDetector>
     );

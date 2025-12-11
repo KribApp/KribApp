@@ -63,6 +63,11 @@ export const Strings = {
         notMemberMessage: 'Je bent nog geen lid van een huis. Ga naar het dashboard om een huis te maken of te joinen.',
         settings: 'Instellingen',
         houseInfo: 'Huis Info',
+        changePhoto: 'Wijzig foto',
+        uploadPhoto: 'Upload van apparaat',
+        enterUrl: 'Voer URL in',
+        invalidPhoto: 'Ongeldige foto',
+        uploadError: 'Kon foto niet uploaden',
     },
 
     // ============================================================================

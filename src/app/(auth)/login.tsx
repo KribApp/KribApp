@@ -17,13 +17,23 @@ export default function Login() {
         setLoading(true);
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
             if (error) {
-                Alert.alert('Error', error.message);
+                console.log('Sign in error:', error.message);
+                if (error.message.includes('Email not confirmed')) {
+                    Alert.alert(
+                        'Email niet bevestigd',
+                        'Je emailadres is nog niet bevestigd. Check je inbox (en spam) voor de activatielink.'
+                    );
+                } else if (error.message.includes('Invalid login credentials')) {
+                    Alert.alert('Fout', 'Ongeldig emailadres of wachtwoord.');
+                } else {
+                    Alert.alert('Error', error.message);
+                }
                 setLoading(false);
                 return;
             }

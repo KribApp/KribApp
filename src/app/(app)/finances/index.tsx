@@ -25,6 +25,10 @@ export default function FinancesList() {
     useEffect(() => {
         if (householdId) {
             fetchLists();
+            const subscription = subscribeToLists();
+            return () => {
+                subscription.unsubscribe();
+            };
         }
     }, [householdId]);
 
@@ -74,6 +78,24 @@ export default function FinancesList() {
         }
     }
 
+    function subscribeToLists() {
+        return supabase
+            .channel('expense_lists')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'expense_lists',
+                    filter: `household_id=eq.${householdId}`,
+                },
+                () => {
+                    fetchLists();
+                }
+            )
+            .subscribe();
+    }
+
     async function createList() {
         if (!newListName.trim() || !householdId) return;
         setCreating(true);
@@ -103,13 +125,13 @@ export default function FinancesList() {
             onPress={() => router.push(`/finances/${item.id}`)}
         >
             <View style={styles.iconContainer}>
-                <Wallet size={24} color="#2563EB" />
+                <Wallet size={24} color={KribTheme.colors.primary} />
             </View>
             <View style={styles.listInfo}>
                 <Text style={styles.listName}>{item.name}</Text>
                 <Text style={styles.listMeta}>Tik om te openen</Text>
             </View>
-            <ChevronRight size={20} color="#9CA3AF" />
+            <ChevronRight size={20} color={KribTheme.colors.text.secondary} />
         </TouchableOpacity>
     );
 
@@ -218,7 +240,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: '#DBEAFE',
+        backgroundColor: '#EFF6FF', // Light blue
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 16,
@@ -234,7 +256,7 @@ const styles = StyleSheet.create({
     },
     listMeta: {
         fontSize: 14,
-        color: '#6B7280',
+        color: KribTheme.colors.text.secondary,
     },
     emptyList: {
         alignItems: 'center',
@@ -310,11 +332,11 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 16,
         borderRadius: 12,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: KribTheme.colors.background,
         alignItems: 'center',
     },
     cancelButtonText: {
-        color: '#4B5563',
+        color: KribTheme.colors.text.secondary,
         fontWeight: '600',
         fontSize: 16,
     },
@@ -322,11 +344,11 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 16,
         borderRadius: 12,
-        backgroundColor: '#2563EB',
+        backgroundColor: KribTheme.colors.primary,
         alignItems: 'center',
     },
     createButtonText: {
-        color: '#FFFFFF',
+        color: KribTheme.colors.text.inverse,
         fontWeight: '600',
         fontSize: 16,
     },

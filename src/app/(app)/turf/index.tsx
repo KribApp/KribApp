@@ -25,6 +25,10 @@ export default function TurfOverview() {
     useEffect(() => {
         if (householdId) {
             fetchLists();
+            const subscription = subscribeToLists();
+            return () => {
+                subscription.unsubscribe();
+            };
         }
     }, [householdId]);
 
@@ -57,6 +61,24 @@ export default function TurfOverview() {
             setLists(uniqueNames.sort());
             setLoading(false);
         }
+    }
+
+    function subscribeToLists() {
+        return supabase
+            .channel('turf_lists')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'turf_counters',
+                    filter: `household_id=eq.${householdId}`,
+                },
+                () => {
+                    fetchLists();
+                }
+            )
+            .subscribe();
     }
 
     async function addList() {
@@ -128,7 +150,7 @@ export default function TurfOverview() {
             </View>
             <View style={styles.listActions}>
                 <TouchableOpacity onPress={() => deleteList(item)} style={styles.deleteButton}>
-                    <Trash2 size={20} color="#EF4444" />
+                    <Trash2 size={20} color={KribTheme.colors.error} />
                 </TouchableOpacity>
                 <ChevronRight size={20} color={KribTheme.colors.text.secondary} />
             </View>
@@ -278,7 +300,7 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         textAlign: 'center',
-        color: '#FFFFFF',
+        color: KribTheme.colors.text.secondary,
         fontStyle: 'italic',
         marginTop: 24,
     },

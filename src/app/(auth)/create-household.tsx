@@ -6,16 +6,8 @@ import { supabase } from '../../services/supabase';
 import { StatusBar } from 'expo-status-bar';
 import { useHousehold } from '../../context/HouseholdContext';
 
-// Assuming KribTheme is defined elsewhere or needs to be imported.
-// For this change, I'll define a placeholder if it's not present.
-const KribTheme = {
-    colors: {
-        text: {
-            secondary: '#6B7280', // Example color
-            inverse: '#FFFFFF', // Example color
-        }
-    }
-};
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { KribTheme } from '../../theme/theme';
 
 export default function CreateHousehold() {
     const [name, setName] = useState('');
@@ -210,156 +202,158 @@ export default function CreateHousehold() {
     }
 
     return (
-        <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            <View style={styles.container}>
-                <StatusBar style="dark" />
-                <View style={styles.header}>
-                    <Text style={styles.title}>Nieuw Huis</Text>
-                    <Text style={styles.subtitle}>Maak een nieuw huishouden aan.</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: KribTheme.colors.background }}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+                <View style={styles.container}>
+                    <StatusBar style="light" />
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Nieuw Huis</Text>
+                        <Text style={styles.subtitle}>Maak een nieuw huishouden aan.</Text>
+                    </View>
+
+                    <View style={styles.form}>
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Huisnaam</Text>
+                            <TextInput
+                                style={styles.input}
+                                onChangeText={setName}
+                                value={name}
+                                placeholder="Bijv. Huize Gezellig"
+                                placeholderTextColor={KribTheme.colors.text.secondary}
+                                returnKeyType="next"
+                                onSubmitEditing={() => addressRef.current?.focus()}
+                                blurOnSubmit={false}
+                            />
+                        </View>
+
+                        <View style={[styles.inputContainer, { zIndex: 10 }]}>
+                            <Text style={styles.label}>Straatnaam en huisnummer</Text>
+                            <TextInput
+                                ref={addressRef}
+                                style={styles.input}
+                                onChangeText={(text) => {
+                                    setStreetAndNumber(text);
+                                    setShowSuggestions(true);
+                                }}
+                                value={streetAndNumber}
+                                placeholder="Straatnaam 123"
+                                placeholderTextColor={KribTheme.colors.text.secondary}
+                                returnKeyType="next"
+                                onSubmitEditing={() => postalCodeRef.current?.focus()}
+                                blurOnSubmit={false}
+                                onFocus={() => setShowSuggestions(true)}
+                            />
+                            {showSuggestions && suggestions.length > 0 && (
+                                <View style={styles.suggestionsContainer}>
+                                    {loadingSuggestions ? (
+                                        <ActivityIndicator style={{ padding: 10 }} />
+                                    ) : (
+                                        suggestions.map((item, index) => (
+                                            <TouchableOpacity
+                                                key={index}
+                                                style={styles.suggestionItem}
+                                                onPress={() => handleSelectSuggestion(item)}
+                                            >
+                                                <Text style={styles.suggestionText}>{item.display_name}</Text>
+                                            </TouchableOpacity>
+                                        ))
+                                    )}
+                                </View>
+                            )}
+                        </View>
+
+
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Postcode</Text>
+                            <TextInput
+                                ref={postalCodeRef}
+                                style={styles.input}
+                                onChangeText={setPostalCode}
+                                value={postalCode}
+                                placeholder="1234 AB"
+                                placeholderTextColor={KribTheme.colors.text.secondary}
+                                returnKeyType="next"
+                                onSubmitEditing={() => cityRef.current?.focus()}
+                                blurOnSubmit={false}
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Stad</Text>
+                            <TextInput
+                                ref={cityRef}
+                                style={styles.input}
+                                onChangeText={setCity}
+                                value={city}
+                                placeholder="Amsterdam"
+                                placeholderTextColor={KribTheme.colors.text.secondary}
+                                returnKeyType="next"
+                                onSubmitEditing={() => provinceRef.current?.focus()}
+                                blurOnSubmit={false}
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Provincie</Text>
+                            <TextInput
+                                ref={provinceRef}
+                                style={styles.input}
+                                onChangeText={setProvince}
+                                value={province}
+                                placeholder="Noord-Holland"
+                                placeholderTextColor={KribTheme.colors.text.secondary}
+                                returnKeyType="next"
+                                onSubmitEditing={() => countryRef.current?.focus()}
+                                blurOnSubmit={false}
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Land</Text>
+                            <TextInput
+                                ref={countryRef}
+                                style={styles.input}
+                                onChangeText={setCountry}
+                                value={country}
+                                placeholder="Nederland"
+                                placeholderTextColor={KribTheme.colors.text.secondary}
+                                returnKeyType="done"
+                                onSubmitEditing={Keyboard.dismiss}
+                            />
+                        </View>
+
+
+
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={createHousehold}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color={KribTheme.colors.primary} />
+                            ) : (
+                                <Text style={styles.buttonText}>Aanmaken</Text>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                            <Text style={styles.backButtonText}>Terug</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-
-                <View style={styles.form}>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Huisnaam</Text>
-                        <TextInput
-                            style={styles.input}
-                            onChangeText={setName}
-                            value={name}
-                            placeholder="Bijv. Huize Gezellig"
-                            placeholderTextColor={KribTheme.colors.text.secondary}
-                            returnKeyType="next"
-                            onSubmitEditing={() => addressRef.current?.focus()}
-                            blurOnSubmit={false}
-                        />
-                    </View>
-
-                    <View style={[styles.inputContainer, { zIndex: 10 }]}>
-                        <Text style={styles.label}>Straatnaam en huisnummer</Text>
-                        <TextInput
-                            ref={addressRef}
-                            style={styles.input}
-                            onChangeText={(text) => {
-                                setStreetAndNumber(text);
-                                setShowSuggestions(true);
-                            }}
-                            value={streetAndNumber}
-                            placeholder="Straatnaam 123"
-                            placeholderTextColor={KribTheme.colors.text.secondary}
-                            returnKeyType="next"
-                            onSubmitEditing={() => postalCodeRef.current?.focus()}
-                            blurOnSubmit={false}
-                            onFocus={() => setShowSuggestions(true)}
-                        />
-                        {showSuggestions && suggestions.length > 0 && (
-                            <View style={styles.suggestionsContainer}>
-                                {loadingSuggestions ? (
-                                    <ActivityIndicator style={{ padding: 10 }} />
-                                ) : (
-                                    suggestions.map((item, index) => (
-                                        <TouchableOpacity
-                                            key={index}
-                                            style={styles.suggestionItem}
-                                            onPress={() => handleSelectSuggestion(item)}
-                                        >
-                                            <Text style={styles.suggestionText}>{item.display_name}</Text>
-                                        </TouchableOpacity>
-                                    ))
-                                )}
-                            </View>
-                        )}
-                    </View>
-
-
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Postcode</Text>
-                        <TextInput
-                            ref={postalCodeRef}
-                            style={styles.input}
-                            onChangeText={setPostalCode}
-                            value={postalCode}
-                            placeholder="1234 AB"
-                            placeholderTextColor={KribTheme.colors.text.secondary}
-                            returnKeyType="next"
-                            onSubmitEditing={() => cityRef.current?.focus()}
-                            blurOnSubmit={false}
-                        />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Stad</Text>
-                        <TextInput
-                            ref={cityRef}
-                            style={styles.input}
-                            onChangeText={setCity}
-                            value={city}
-                            placeholder="Amsterdam"
-                            placeholderTextColor={KribTheme.colors.text.secondary}
-                            returnKeyType="next"
-                            onSubmitEditing={() => provinceRef.current?.focus()}
-                            blurOnSubmit={false}
-                        />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Provincie</Text>
-                        <TextInput
-                            ref={provinceRef}
-                            style={styles.input}
-                            onChangeText={setProvince}
-                            value={province}
-                            placeholder="Noord-Holland"
-                            placeholderTextColor={KribTheme.colors.text.secondary}
-                            returnKeyType="next"
-                            onSubmitEditing={() => countryRef.current?.focus()}
-                            blurOnSubmit={false}
-                        />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Land</Text>
-                        <TextInput
-                            ref={countryRef}
-                            style={styles.input}
-                            onChangeText={setCountry}
-                            value={country}
-                            placeholder="Nederland"
-                            placeholderTextColor={KribTheme.colors.text.secondary}
-                            returnKeyType="done"
-                            onSubmitEditing={Keyboard.dismiss}
-                        />
-                    </View>
-
-
-
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={createHousehold}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color={KribTheme.colors.text.inverse} />
-                        ) : (
-                            <Text style={styles.buttonText}>Aanmaken</Text>
-                        )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Text style={styles.backButtonText}>Terug</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: KribTheme.colors.background,
         padding: 24,
         justifyContent: 'center',
     },
@@ -369,12 +363,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#111827',
+        color: '#FFFFFF',
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: 'rgba(255, 255, 255, 0.8)',
     },
     form: {
         gap: 20,
@@ -390,7 +384,7 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#374151',
+        color: '#FFFFFF',
     },
     input: {
         backgroundColor: '#FFFFFF',
@@ -402,19 +396,19 @@ const styles = StyleSheet.create({
         color: '#111827',
     },
     button: {
-        backgroundColor: '#8B5CF6',
+        backgroundColor: '#FFFFFF',
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
         marginTop: 8,
-        shadowColor: '#8B5CF6',
+        shadowColor: 'rgba(0, 0, 0, 0.2)',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 4,
     },
     buttonText: {
-        color: '#FFFFFF',
+        color: KribTheme.colors.primary,
         fontSize: 16,
         fontWeight: '600',
     },
@@ -423,7 +417,7 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     backButtonText: {
-        color: '#6B7280',
+        color: 'rgba(255, 255, 255, 0.7)',
         fontSize: 16,
     },
     suggestionsContainer: {

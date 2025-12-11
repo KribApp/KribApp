@@ -27,6 +27,10 @@ export default function TurfDetail() {
     useEffect(() => {
         if (householdId) {
             fetchCounters();
+            const subscription = subscribeToCounters();
+            return () => {
+                subscription.unsubscribe();
+            };
         }
     }, [householdId]);
 
@@ -59,6 +63,25 @@ export default function TurfDetail() {
             setCounters(data);
             setLoading(false);
         }
+    }
+
+    function subscribeToCounters() {
+        return supabase
+            .channel('turf_counters_detail')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'turf_counters',
+                    filter: `household_id=eq.${householdId}`,
+                },
+                () => {
+                    // Refresh if the item name matches or if we need to check membership
+                    fetchCounters();
+                }
+            )
+            .subscribe();
     }
 
     async function fetchAllMembers() {
@@ -304,7 +327,7 @@ const styles = StyleSheet.create({
     memberName: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#111827',
+        color: KribTheme.colors.text.primary,
     },
     counterControls: {
         flexDirection: 'row',
@@ -325,7 +348,7 @@ const styles = StyleSheet.create({
     count: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#111827',
+        color: KribTheme.colors.text.primary,
         minWidth: 24,
         textAlign: 'center',
     },
@@ -335,13 +358,13 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     emptyText: {
-        color: 'rgba(255, 255, 255, 0.7)',
+        color: KribTheme.colors.text.secondary,
         fontSize: 16,
     },
     emptyButton: {
         paddingVertical: 12,
         paddingHorizontal: 24,
-        backgroundColor: '#2563EB',
+        backgroundColor: KribTheme.colors.primary,
         borderRadius: 24,
     },
     emptyButtonText: {
@@ -350,7 +373,7 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: KribTheme.colors.background,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -359,12 +382,12 @@ const styles = StyleSheet.create({
         padding: 16,
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
+        borderBottomColor: KribTheme.colors.border,
     },
     modalTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#111827',
+        color: KribTheme.colors.text.primary,
     },
     closeButton: {
         padding: 4,
@@ -389,7 +412,7 @@ const styles = StyleSheet.create({
     modalMemberName: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#111827',
+        color: KribTheme.colors.text.primary,
     },
     actionButton: {
         paddingVertical: 8,
@@ -407,9 +430,9 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     addButtonText: {
-        color: '#2563EB',
+        color: KribTheme.colors.primary,
     },
     removeButtonText: {
-        color: '#EF4444',
+        color: KribTheme.colors.error,
     },
 });

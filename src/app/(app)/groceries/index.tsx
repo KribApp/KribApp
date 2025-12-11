@@ -18,6 +18,7 @@ export default function Groceries() {
     const [submitting, setSubmitting] = useState(false);
     const [householdId, setHouseholdId] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
 
     // Fetch household and user on mount
     useEffect(() => {
@@ -66,9 +67,9 @@ export default function Groceries() {
             if (a.is_pinned && !b.is_pinned) return -1;
             if (!a.is_pinned && b.is_pinned) return 1;
 
-            // 2. If both pinned, sort by created_at
+            // 2. If both pinned, sort by Position
             if (a.is_pinned && b.is_pinned) {
-                return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+                return (a.position || 0) - (b.position || 0);
             }
 
             // 3. Unpinned items: Checked items at bottom
@@ -117,6 +118,9 @@ export default function Groceries() {
                     filter: `household_id=eq.${householdId}`,
                 },
                 (payload) => {
+                    // Skip subscription updates while dragging to prevent conflicts
+                    if (isDragging) return;
+
                     const newItem = payload.new as ShoppingItem;
                     const oldItem = payload.old as { id: string };
                     if (payload.eventType === 'INSERT') {
@@ -129,7 +133,7 @@ export default function Groceries() {
                 }
             )
             .subscribe();
-    }, [householdId]);
+    }, [householdId, isDragging]);
 
     const addItem = useCallback(async () => {
         if (!householdId) {
@@ -268,81 +272,52 @@ export default function Groceries() {
     }, [householdId, userId]);
 
     const onDragEnd = useCallback(async ({ data }: { data: ShoppingItem[] }) => {
-        // Optimistic update
-        setItems(prev => {
-            const updatedItems = [...prev];
-            data.forEach((item, index) => {
-                const foundIndex = updatedItems.findIndex(i => i.id === item.id);
-                if (foundIndex !== -1) {
-                    updatedItems[foundIndex] = { ...updatedItems[foundIndex], position: index };
-                }
-            });
-            return updatedItems;
-        });
+        // 'data' here is ONLY the unpinned items in their new order
+        // We need to fetch the pinned items to reconstruct the full list state
+        const pinnedItems = sortedItems.filter(item => item.is_pinned);
 
-        // Persist to DB
-        const updates = data.map((item, index) => ({
-            id: item.id,
-            position: index,
+        // Reconstruct the list: pinned items stay at top, followed by the new order of unpinned items
+        const reorderedData = [...pinnedItems, ...data];
+
+        // Update positions
+        const updatedData = reorderedData.map((item, index) => ({
+            ...item,
+            position: index
         }));
+        setItems(updatedData);
 
-        for (const update of updates) {
-            const { error } = await supabase
+        // Persist to DB in background
+        const updatePromises = updatedData.map((item, index) =>
+            supabase
                 .from('shopping_items')
-                .update({ position: update.position })
-                .eq('id', update.id);
+                .update({ position: index })
+                .eq('id', item.id)
+        );
 
-            if (error) {
-                console.error('Error updating position:', error);
-            }
+        try {
+            await Promise.all(updatePromises);
+        } catch (error) {
+            console.error('Error updating positions:', error);
+            fetchItems();
+        } finally {
+            setTimeout(() => setIsDragging(false), 500);
         }
+    }, [sortedItems, fetchItems]);
+
+    const onDragBegin = useCallback(() => {
+        setIsDragging(true);
     }, []);
 
     const renderItem = useCallback(({ item, drag, isActive }: RenderItemParams<ShoppingItem>) => (
-        <ScaleDecorator>
-            <View style={[
-                styles.itemContainer,
-                item.is_pinned && styles.itemContainerPinned,
-                isActive && { backgroundColor: '#F3F4F6' }
-            ]}>
-                {!item.is_pinned && !item.is_checked && (
-                    <TouchableOpacity onPressIn={drag} disabled={isActive} style={styles.dragHandle}>
-                        <GripVertical size={20} color={KribTheme.colors.text.secondary} />
-                    </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                    style={styles.checkboxContainer}
-                    onPress={() => toggleItem(item.id, item.is_checked ?? false)}
-                >
-                    <View style={[styles.checkbox, item.is_checked && styles.checkboxChecked]}>
-                        {item.is_checked && <Text style={styles.checkmark}>✓</Text>}
-                    </View>
-                    <Text style={[styles.itemText, item.is_checked && styles.itemTextChecked]}>
-                        {item.name}
-                    </Text>
-                </TouchableOpacity>
-
-                <View style={styles.actions}>
-                    <TouchableOpacity onPress={() => togglePin(item.id, item.is_pinned ?? false)} style={styles.actionButton}>
-                        {item.is_pinned ? (
-                            <PinOff size={20} color={KribTheme.colors.text.secondary} />
-                        ) : (
-                            <Pin size={20} color={KribTheme.colors.text.secondary} />
-                        )}
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => panicButton(item.name, item.id)} style={styles.actionButton}>
-                        <AlertTriangle size={20} color={KribTheme.colors.warning} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => deleteItem(item.id, item.is_pinned ?? false)}
-                        style={[styles.actionButton, { opacity: item.is_pinned ? 0.3 : 1 }]}
-                    >
-                        <Trash2 size={20} color={KribTheme.colors.error} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </ScaleDecorator>
+        <GroceryItemRow
+            item={item}
+            onToggle={toggleItem}
+            onTogglePin={togglePin}
+            onPanic={panicButton}
+            onDelete={deleteItem}
+            drag={drag}
+            isActive={isActive}
+        />
     ), [toggleItem, togglePin, panicButton, deleteItem]);
 
     return (
@@ -389,17 +364,36 @@ export default function Groceries() {
                     <ActivityIndicator style={{ marginTop: 20 }} />
                 ) : (
                     <DraggableFlatList
-                        data={sortedItems}
+                        data={sortedItems.filter(i => !i.is_pinned)}
+                        onDragBegin={onDragBegin}
                         onDragEnd={onDragEnd}
                         keyExtractor={(item) => item.id}
                         renderItem={renderItem}
                         contentContainerStyle={styles.listContent}
-                        ListEmptyComponent={
-                            <View style={styles.emptyList}>
-                                <View style={styles.emptyListCard}>
-                                    <Text style={styles.emptyListText}>{Strings.groceries.emptyList}</Text>
-                                </View>
+                        ListHeaderComponent={
+                            <View>
+                                {sortedItems.filter(i => i.is_pinned).map(item => (
+                                    <GroceryItemRow
+                                        key={item.id}
+                                        item={item}
+                                        onToggle={toggleItem}
+                                        onTogglePin={togglePin}
+                                        onPanic={panicButton}
+                                        onDelete={deleteItem}
+                                        drag={undefined}
+                                        isActive={false}
+                                    />
+                                ))}
                             </View>
+                        }
+                        ListEmptyComponent={
+                            sortedItems.length === 0 ? (
+                                <View style={styles.emptyList}>
+                                    <View style={styles.emptyListCard}>
+                                        <Text style={styles.emptyListText}>{Strings.groceries.emptyList}</Text>
+                                    </View>
+                                </View>
+                            ) : null
                         }
                     />
                 )}
@@ -407,6 +401,80 @@ export default function Groceries() {
         </View>
     );
 }
+
+// Extracted Row Component
+const GroceryItemRow = ({
+    item,
+    onToggle,
+    onTogglePin,
+    onPanic,
+    onDelete,
+    drag,
+    isActive
+}: {
+    item: ShoppingItem;
+    onToggle: (id: string, current: boolean) => void;
+    onTogglePin: (id: string, current: boolean) => void;
+    onPanic: (name: string, id: string) => void;
+    onDelete: (id: string, pinned: boolean) => void;
+    drag?: () => void;
+    isActive: boolean;
+}) => {
+    const content = (
+        <View style={[
+            styles.itemContainer,
+            item.is_pinned && styles.itemContainerPinned,
+            isActive && { backgroundColor: '#F3F4F6' }
+        ]}>
+            {!item.is_pinned && !item.is_checked && drag && (
+                <TouchableOpacity onPressIn={drag} disabled={isActive} style={styles.dragHandle}>
+                    <GripVertical size={20} color={KribTheme.colors.text.secondary} />
+                </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+                style={styles.checkboxContainer}
+                onPress={() => onToggle(item.id, item.is_checked ?? false)}
+            >
+                <View style={[styles.checkbox, item.is_checked && styles.checkboxChecked]}>
+                    {item.is_checked && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <Text style={[styles.itemText, item.is_checked && styles.itemTextChecked]}>
+                    {item.name}
+                </Text>
+            </TouchableOpacity>
+
+            <View style={styles.actions}>
+                <TouchableOpacity onPress={() => onTogglePin(item.id, item.is_pinned ?? false)} style={styles.actionButton}>
+                    {item.is_pinned ? (
+                        <PinOff size={20} color={KribTheme.colors.text.secondary} />
+                    ) : (
+                        <Pin size={20} color={KribTheme.colors.text.secondary} />
+                    )}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => onPanic(item.name, item.id)} style={styles.actionButton}>
+                    <AlertTriangle size={20} color={KribTheme.colors.warning} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => onDelete(item.id, item.is_pinned ?? false)}
+                    style={[styles.actionButton, { opacity: item.is_pinned ? 0.3 : 1 }]}
+                >
+                    <Trash2 size={20} color={KribTheme.colors.error} />
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+
+    if (drag) {
+        return (
+            <ScaleDecorator>
+                {content}
+            </ScaleDecorator>
+        );
+    }
+
+    return content;
+};
 
 const styles = StyleSheet.create({
     container: {

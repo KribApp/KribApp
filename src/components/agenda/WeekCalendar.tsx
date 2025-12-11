@@ -1,27 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, getISOWeek } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { nl } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, CalendarCheck } from 'lucide-react-native';
 import { supabase } from '../../services/supabase';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming,
+    runOnJS,
+    interpolate,
+    Extrapolation
+} from 'react-native-reanimated';
+import { KribTheme } from '../../theme/theme';
 
 interface WeekCalendarProps {
     selectedDate: string;
     onSelectDate: (date: string) => void;
     householdId: string | null;
     timezone: string;
+    onGoToToday?: () => void;
 }
 
-export function WeekCalendar({ selectedDate, onSelectDate, householdId, timezone }: WeekCalendarProps) {
+export function WeekCalendar({ selectedDate, onSelectDate, householdId, timezone, onGoToToday }: WeekCalendarProps) {
+    const { width } = useWindowDimensions();
+    const translateX = useSharedValue(0);
+    const opacity = useSharedValue(1);
+
     const [currentWeekStart, setCurrentWeekStart] = useState(
         startOfWeek(new Date(selectedDate || new Date()), { weekStartsOn: 1 })
     );
     const [choreDates, setChoreDates] = useState<string[]>([]);
 
+    // Reset animation when week changes
+    useEffect(() => {
+        translateX.value = 0;
+        opacity.value = 1;
+    }, [currentWeekStart]);
+
     useEffect(() => {
         if (selectedDate) {
-            // Ensure the calendar shows the week of the selected date if it changes externally
             const selected = new Date(selectedDate);
             const start = startOfWeek(selected, { weekStartsOn: 1 });
             if (start.getTime() !== currentWeekStart.getTime()) {
@@ -52,7 +73,6 @@ export function WeekCalendar({ selectedDate, onSelectDate, householdId, timezone
         if (data) {
             const dates = data.map(c => {
                 if (!c.due_date) return '';
-                // Convert UTC timestamp to household timezone
                 const zonedDate = toZonedTime(c.due_date, timezone);
                 return format(zonedDate, 'yyyy-MM-dd');
             }).filter(Boolean);
@@ -60,60 +80,132 @@ export function WeekCalendar({ selectedDate, onSelectDate, householdId, timezone
         }
     }
 
-    function handlePrevWeek() {
-        setCurrentWeekStart(prev => subWeeks(prev, 1));
-    }
+    const performWeekChange = (delta: number) => {
+        setCurrentWeekStart(prev => delta > 0 ? addWeeks(prev, 1) : subWeeks(prev, 1));
+    };
 
-    function handleNextWeek() {
-        setCurrentWeekStart(prev => addWeeks(prev, 1));
-    }
+    const handleWeekChange = (delta: number) => {
+        const targetX = delta > 0 ? -width : width;
+        translateX.value = withTiming(targetX, { duration: 100 }, () => {
+            runOnJS(performWeekChange)(delta);
+            translateX.value = -targetX;
+            translateX.value = withSpring(0, { damping: 25, stiffness: 350 });
+        });
+    };
+
+    const performGoToToday = (dateTimestamp: number, dateString: string) => {
+        setCurrentWeekStart(new Date(dateTimestamp));
+        onSelectDate(dateString);
+        onGoToToday?.();
+    };
+
+    const handleGoToToday = () => {
+        const today = new Date();
+        const todayString = format(today, 'yyyy-MM-dd');
+        const todayWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+        const todayWeekStartTimestamp = todayWeekStart.getTime();
+
+        if (todayWeekStart.getTime() !== currentWeekStart.getTime()) {
+            // Animate to today's week
+            const isForward = todayWeekStart > currentWeekStart;
+            const targetX = isForward ? -width : width;
+            translateX.value = withTiming(targetX, { duration: 100 }, () => {
+                runOnJS(performGoToToday)(todayWeekStartTimestamp, todayString);
+                translateX.value = -targetX;
+                translateX.value = withSpring(0, { damping: 25, stiffness: 350 });
+            });
+        } else {
+            onSelectDate(todayString);
+            onGoToToday?.();
+        }
+    };
+
+    const panGesture = Gesture.Pan()
+        .onUpdate((e) => {
+            translateX.value = e.translationX * 0.5;
+            opacity.value = interpolate(
+                Math.abs(e.translationX),
+                [0, 150],
+                [1, 0.7],
+                Extrapolation.CLAMP
+            );
+        })
+        .onEnd((e) => {
+            if (e.translationX > 80) {
+                runOnJS(handleWeekChange)(-1);
+            } else if (e.translationX < -80) {
+                runOnJS(handleWeekChange)(1);
+            } else {
+                translateX.value = withSpring(0, { damping: 25, stiffness: 350 });
+                opacity.value = withTiming(1, { duration: 100 });
+            }
+        });
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: translateX.value }],
+        opacity: opacity.value,
+    }));
 
     const weekNumber = getISOWeek(currentWeekStart);
     const days = Array.from({ length: 7 }).map((_, i) => addDays(currentWeekStart, i));
 
+    // Check if today is visible in current week
+    const today = new Date();
+    const todayInCurrentWeek = days.some(day => isSameDay(day, today));
+
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={handlePrevWeek} style={styles.arrowButton}>
-                    <ChevronLeft size={20} color="#6B7280" />
-                </TouchableOpacity>
-                <Text style={styles.weekText}>Week {weekNumber}</Text>
-                <TouchableOpacity onPress={handleNextWeek} style={styles.arrowButton}>
-                    <ChevronRight size={20} color="#6B7280" />
-                </TouchableOpacity>
-            </View>
+        <GestureDetector gesture={panGesture}>
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => handleWeekChange(-1)} style={styles.arrowButton}>
+                        <ChevronLeft size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                    <Text style={styles.weekText}>Week {weekNumber}</Text>
+                    <TouchableOpacity onPress={() => handleWeekChange(1)} style={styles.arrowButton}>
+                        <ChevronRight size={20} color="#6B7280" />
+                    </TouchableOpacity>
 
-            <View style={styles.daysContainer}>
-                {days.map((day) => {
-                    const dateString = format(day, 'yyyy-MM-dd');
-                    const isSelected = selectedDate === dateString;
-                    const hasChore = choreDates.includes(dateString);
-                    const isToday = isSameDay(day, new Date());
-
-                    return (
-                        <TouchableOpacity
-                            key={dateString}
-                            style={[
-                                styles.dayButton,
-                                isSelected && styles.dayButtonSelected,
-                                isToday && !isSelected && styles.dayButtonToday
-                            ]}
-                            onPress={() => onSelectDate(dateString)}
-                        >
-                            <Text style={[styles.dayName, isSelected && styles.textSelected]}>
-                                {format(day, 'EEE', { locale: nl })}
-                            </Text>
-                            <Text style={[styles.dayNumber, isSelected && styles.textSelected]}>
-                                {format(day, 'd')}
-                            </Text>
-                            {hasChore && (
-                                <View style={[styles.dot, isSelected && styles.dotSelected]} />
-                            )}
+                    {/* Go to Today button */}
+                    {!todayInCurrentWeek && (
+                        <TouchableOpacity onPress={handleGoToToday} style={styles.todayButton}>
+                            <CalendarCheck size={16} color={KribTheme.colors.primary} />
+                            <Text style={styles.todayButtonText}>Vandaag</Text>
                         </TouchableOpacity>
-                    );
-                })}
+                    )}
+                </View>
+
+                <Animated.View style={[styles.daysContainer, animatedStyle]}>
+                    {days.map((day) => {
+                        const dateString = format(day, 'yyyy-MM-dd');
+                        const isSelected = selectedDate === dateString;
+                        const hasChore = choreDates.includes(dateString);
+                        const isToday = isSameDay(day, new Date());
+
+                        return (
+                            <TouchableOpacity
+                                key={dateString}
+                                style={[
+                                    styles.dayButton,
+                                    isSelected && styles.dayButtonSelected,
+                                    isToday && !isSelected && styles.dayButtonToday
+                                ]}
+                                onPress={() => onSelectDate(dateString)}
+                            >
+                                <Text style={[styles.dayName, isSelected && styles.textSelected]}>
+                                    {format(day, 'EEE', { locale: nl })}
+                                </Text>
+                                <Text style={[styles.dayNumber, isSelected && styles.textSelected]}>
+                                    {format(day, 'd')}
+                                </Text>
+                                {hasChore && (
+                                    <View style={[styles.dot, isSelected && styles.dotSelected]} />
+                                )}
+                            </TouchableOpacity>
+                        );
+                    })}
+                </Animated.View>
             </View>
-        </View>
+        </GestureDetector>
     );
 }
 
@@ -130,6 +222,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginBottom: 12,
         gap: 16,
+        paddingHorizontal: 16,
     },
     weekText: {
         fontSize: 14,
@@ -138,6 +231,22 @@ const styles = StyleSheet.create({
     },
     arrowButton: {
         padding: 4,
+    },
+    todayButton: {
+        position: 'absolute',
+        right: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EEF2FF',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 16,
+        gap: 4,
+    },
+    todayButtonText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: KribTheme.colors.primary,
     },
     daysContainer: {
         flexDirection: 'row',
