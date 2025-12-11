@@ -3,11 +3,12 @@ import { supabase } from '../services/supabase';
 import { useFocusEffect } from 'expo-router';
 import { Alert } from 'react-native';
 import { useHousehold } from '../context/HouseholdContext';
+import { Notification } from '../types/models';
 
 export function useDashboardData() {
     const { household, loading: contextLoading } = useHousehold();
     const [loading, setLoading] = useState(true);
-    const [alerts, setAlerts] = useState<any[]>([]);
+    const [alerts, setAlerts] = useState<Notification[]>([]);
     const [eatingCount, setEatingCount] = useState<number | null>(null);
 
     const householdId = household?.id || null;
@@ -105,17 +106,18 @@ export function useDashboardData() {
                     filter: `household_id=eq.${householdId}`,
                 },
                 (payload) => {
+                    const newNotification = payload.new as Notification;
                     if (payload.eventType === 'INSERT') {
-                        setAlerts((prev) => [payload.new, ...prev]);
+                        setAlerts((prev) => [newNotification, ...prev]);
                     } else if (payload.eventType === 'UPDATE') {
-                        setAlerts((prev) => prev.map(a => a.id === payload.new.id ? payload.new : a));
+                        setAlerts((prev) => prev.map(a => a.id === newNotification.id ? newNotification : a));
                     }
                 }
             )
             .subscribe();
     }
 
-    async function resolveAlert(alertId: string, relatedEntityId?: string) {
+    async function resolveAlert(alertId: string, relatedEntityId?: string | null) {
         console.log('Resolving alert:', alertId, 'Related Entity:', relatedEntityId);
 
         // Optimistic update: Mark as resolved immediately

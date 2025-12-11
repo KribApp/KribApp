@@ -15,31 +15,51 @@ export default function Login() {
 
     async function signInWithEmail() {
         setLoading(true);
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
 
-        if (error) {
-            Alert.alert('Error', error.message);
-            setLoading(false);
-        } else {
-            // Check if profile exists before considering login successful
-            const { data: profile } = await supabase
-                .from('users')
-                .select('id')
-                .eq('id', (await supabase.auth.getUser()).data.user?.id)
-                .maybeSingle();
+        try {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-            if (!profile) {
-                await supabase.auth.signOut();
-                Alert.alert('Account Error', 'Your user profile was not found. Please register again.');
+            if (error) {
+                Alert.alert('Error', error.message);
                 setLoading(false);
                 return;
             }
 
-            // Session update will trigger redirect in index.tsx or _layout.tsx
-            // But we can also manually push if needed, though the auth listener is better.
+            // Get the authenticated user with proper error handling
+            const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+            if (authError || !authUser) {
+                Alert.alert('Error', 'Kon gebruiker niet ophalen. Probeer opnieuw in te loggen.');
+                setLoading(false);
+                return;
+            }
+
+            // Check if profile exists before considering login successful
+            const { data: profile, error: profileError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('id', authUser.id)
+                .maybeSingle();
+
+            if (profileError) {
+                console.error('Error fetching profile:', profileError);
+            }
+
+            if (!profile) {
+                await supabase.auth.signOut();
+                Alert.alert('Account Error', 'Je profiel is niet gevonden. Registreer opnieuw.');
+                setLoading(false);
+                return;
+            }
+
+            // Session update will trigger redirect via HouseholdContext auth listener
+            setLoading(false);
+        } catch (err) {
+            console.error('Login error:', err);
+            Alert.alert('Error', 'Er is iets misgegaan. Probeer het opnieuw.');
             setLoading(false);
         }
     }

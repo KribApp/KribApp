@@ -18,9 +18,9 @@ export default function CustomDrawerContent(props: any) {
         { label: 'Homepage', icon: Home, route: '/(app)/dashboard' },
         { label: 'Chat', icon: MessageSquare, route: '/(app)/chat' },
         { label: 'Boodschappen', icon: ShoppingCart, route: '/(app)/groceries' },
-        { label: 'Agenda', icon: Calendar, route: '/agenda' },
-        { label: 'Huishouden', icon: CheckSquare, route: '/chores' },
-        { label: 'Financiën', icon: DollarSign, route: '/finances' },
+        { label: 'Agenda', icon: Calendar, route: '/(app)/agenda' },
+        { label: 'Huishouden', icon: CheckSquare, route: '/(app)/chores' },
+        { label: 'Financiën', icon: DollarSign, route: '/(app)/finances' },
         { label: 'Turflijstjes', icon: CheckSquare, route: '/(app)/turf' },
         { label: 'Huis Info', icon: Home, route: '/(app)/house-info' },
     ];

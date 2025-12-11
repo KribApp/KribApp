@@ -2,11 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { Bell, CheckCircle } from 'lucide-react-native';
 import { KribTheme } from '../../theme/theme';
+import { Notification } from '../../types/models';
 
 interface AlertsListProps {
-    alerts: any[];
+    alerts: Notification[];
     loading: boolean;
-    onResolve: (id: string, relatedEntityId?: string) => void;
+    onResolve: (id: string, relatedEntityId?: string | null) => void;
 }
 
 export function AlertsList({ alerts, loading, onResolve }: AlertsListProps) {
@@ -25,7 +26,7 @@ export function AlertsList({ alerts, loading, onResolve }: AlertsListProps) {
         }
     }
 
-    const renderAlert = ({ item, index }: { item: any, index: number }) => {
+    const renderAlert = ({ item, index }: { item: Notification, index: number }) => {
         const isResolved = item.is_resolved;
 
         const showDateDivider = (() => {

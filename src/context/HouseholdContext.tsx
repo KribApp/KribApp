@@ -1,16 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
-import { Database } from '../types/database.types';
 import { router } from 'expo-router';
-
-type UserProfile = Database['public']['Tables']['users']['Row'];
-type Household = Database['public']['Tables']['households']['Row'];
-type Member = Database['public']['Tables']['household_members']['Row'];
+import { UserProfile, Household, HouseholdMember, MemberWithHousehold } from '../types/models';
 
 interface HouseholdContextType {
     user: UserProfile | null;
     household: Household | null;
-    member: Member | null;
+    member: HouseholdMember | null;
     loading: boolean;
     refreshHousehold: () => Promise<void>;
 }
@@ -30,7 +26,7 @@ export function useHousehold() {
 export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<UserProfile | null>(null);
     const [household, setHousehold] = useState<Household | null>(null);
-    const [member, setMember] = useState<Member | null>(null);
+    const [member, setMember] = useState<HouseholdMember | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -95,9 +91,10 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
             }
 
             if (memberData) {
-                setMember(memberData);
-                // @ts-ignore - Supabase types for joins can be tricky, casting for now
-                setHousehold(memberData.households as Household);
+                // Cast to our typed interface for joined query
+                const typedMember = memberData as unknown as MemberWithHousehold;
+                setMember(typedMember);
+                setHousehold(typedMember.households);
             } else {
                 // User might not be in a household yet
                 setMember(null);

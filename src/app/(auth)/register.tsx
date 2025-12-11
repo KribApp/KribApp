@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { KribTheme } from '../../theme/theme';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Eye, EyeOff } from 'lucide-react-native';
+import * as Linking from 'expo-linking';
 
 export default function Register() {
     const [email, setEmail] = useState('');
@@ -45,25 +46,45 @@ export default function Register() {
 
         setLoading(true);
 
+        // Get the redirect URL for Expo Go / standalone app
+        // This creates a URL like: exp://192.168.x.x:8081/--/(auth)/callback
+        const redirectUrl = Linking.createURL('(auth)/callback');
+        console.log('Email verification redirect URL:', redirectUrl);
+
         // 1. Sign up with Supabase Auth
         const { data: { session, user }, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
+                emailRedirectTo: redirectUrl,
                 data: {
                     username,
+                    birthdate: birthdate.toISOString().split('T')[0],
                 },
             },
         });
 
+        setLoading(false);
+
         if (error) {
             Alert.alert('Error', error.message);
-            setLoading(false);
             return;
         }
 
-        if (user) {
-            // User is logged in immediately (email confirmation disabled)
+        if (user && !session) {
+            // Email confirmation is enabled - user needs to verify email
+            Alert.alert(
+                'Email Verificatie',
+                'Er is een bevestigingsmail verstuurd naar ' + email + '. Klik op de link in de mail om je account te activeren.',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => router.replace('/(auth)/login'),
+                    },
+                ]
+            );
+        } else if (user && session) {
+            // Email confirmation is disabled - user is logged in immediately
             Alert.alert('Succes', 'Account aangemaakt! Je bent nu ingelogd.');
             // Redirect will happen automatically via auth state change listener
         }

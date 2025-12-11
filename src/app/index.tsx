@@ -1,79 +1,42 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { View, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { supabase } from '../services/supabase';
-import { Session } from '@supabase/supabase-js';
+import { useHousehold } from '../context/HouseholdContext';
+import { KribTheme } from '../theme/theme';
 
+/**
+ * Entry point that handles initial routing based on auth and household state.
+ * Uses HouseholdContext for state (no duplicate auth listener here).
+ */
 export default function Index() {
-    const [session, setSession] = useState<Session | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { user, household, loading } = useHousehold();
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            if (!session) {
-                setLoading(false);
-                router.replace('/(auth)/login');
-            } else {
-                checkHousehold(session.user.id);
-            }
-        });
+        if (loading) return;
 
-        supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            if (session) checkHousehold(session.user.id);
-            else if (!loading) router.replace('/(auth)/login');
-        });
-    }, []);
-
-    async function checkHousehold(userId: string) {
-        // 1. Check if user profile exists in public.users
-        const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('id')
-            .eq('id', userId)
-            .maybeSingle();
-
-        if (!profile) {
-            // Profile missing (e.g. after DB reset). 
-            // Sign out and redirect to login.
-            await supabase.auth.signOut();
-            setLoading(false);
+        if (!user) {
+            // Not logged in - go to login
             router.replace('/(auth)/login');
-            return;
-        }
-
-        // 2. Check if user is in any household
-        const { data, error } = await supabase
-            .from('household_members')
-            .select('household_id')
-            .eq('user_id', userId)
-            .limit(1);
-
-        setLoading(false);
-
-        if (data && data.length > 0) {
-            router.replace('/(app)/dashboard');
-        } else {
-            // User is logged in but has no household
+        } else if (!household) {
+            // Logged in but no household - go to household start
             router.replace('/(auth)/household-start');
+        } else {
+            // Logged in with household - go to dashboard
+            router.replace('/(app)/dashboard');
         }
-    }
+    }, [loading, user, household]);
 
-    if (loading) {
-        return (
-            <View style={styles.container}>
-                <Image
-                    source={require('../../assets/krib-logo.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                />
-                <ActivityIndicator size="large" color="#5D5FEF" />
-            </View>
-        );
-    }
-
-    return null;
+    // Always show loading screen while determining state
+    return (
+        <View style={styles.container}>
+            <Image
+                source={require('../../assets/krib-logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+            />
+            <ActivityIndicator size="large" color={KribTheme.colors.primary} />
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({

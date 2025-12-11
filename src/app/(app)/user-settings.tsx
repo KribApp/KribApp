@@ -85,7 +85,7 @@ export default function UserSettings() {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
 
             {/* Header */}
             <View style={styles.header}>
@@ -198,7 +198,7 @@ export default function UserSettings() {
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+                        <TouchableOpacity style={[styles.saveButton, saving && styles.saveButtonDisabled]} onPress={handleSave} disabled={saving}>
                             {saving ? (
                                 <ActivityIndicator color={KribTheme.colors.primary} />
                             ) : (
@@ -345,5 +345,8 @@ const styles = StyleSheet.create({
         color: KribTheme.colors.primary,
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    saveButtonDisabled: {
+        opacity: 0.6,
     },
 });
