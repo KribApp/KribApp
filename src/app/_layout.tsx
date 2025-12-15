@@ -41,7 +41,6 @@ export default function RootLayout() {
                 const refreshToken = params.get('refresh_token');
 
                 if (accessToken && refreshToken) {
-                    console.log('Deep link: Setting session from email verification');
                     const { error } = await supabase.auth.setSession({
                         access_token: accessToken,
                         refresh_token: refreshToken,

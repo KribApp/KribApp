@@ -32,8 +32,8 @@ export function useDashboardData() {
 
     useEffect(() => {
         if (householdId) {
-            fetchAlerts();
-            fetchDiningStatus();
+            // Subscriptions handle real-time updates
+            // Initial fetch is handled by useFocusEffect
             const chatSub = subscribeToAlerts();
             const diningSub = subscribeToDining();
 
@@ -118,7 +118,6 @@ export function useDashboardData() {
     }
 
     async function resolveAlert(alertId: string, relatedEntityId?: string | null) {
-        console.log('Resolving alert:', alertId, 'Related Entity:', relatedEntityId);
 
         // Optimistic update: Mark as resolved immediately
         setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, is_resolved: true } : a));
@@ -137,7 +136,6 @@ export function useDashboardData() {
 
         // 2. If linked to a shopping item, mark it as checked (bought)
         if (relatedEntityId) {
-            console.log('Updating shopping item:', relatedEntityId);
             const { data, error: itemError } = await supabase
                 .from('shopping_items')
                 .update({ is_checked: true })
@@ -148,7 +146,7 @@ export function useDashboardData() {
                 console.error('Error updating shopping item:', itemError);
                 Alert.alert('Fout', 'Kon shopping item niet updaten. Check je internet of rechten.');
             } else {
-                console.log('Shopping item updated:', data);
+                // Success
             }
         }
     }

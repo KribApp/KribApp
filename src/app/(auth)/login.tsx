@@ -23,7 +23,6 @@ export default function Login() {
             });
 
             if (error) {
-                console.log('Sign in error:', error.message);
                 if (error.message.includes('Email not confirmed')) {
                     Alert.alert(
                         'Email niet bevestigd',
@@ -65,7 +64,8 @@ export default function Login() {
                 return;
             }
 
-            // Session update will trigger redirect via HouseholdContext auth listener
+            // Success! Profile exists and session is active.
+            router.replace('/');
             setLoading(false);
         } catch (err) {
             console.error('Login error:', err);

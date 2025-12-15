@@ -35,7 +35,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                 fetchData();
-            } else if (event === 'SIGNED_OUT') {
+            } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESH_FAILED') {
                 setUser(null);
                 setHousehold(null);
                 setMember(null);

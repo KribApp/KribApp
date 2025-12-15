@@ -28,7 +28,6 @@ export default function HallOfFame() {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                console.log('No user found');
                 setLoading(false);
                 return;
             }
@@ -48,7 +47,6 @@ export default function HallOfFame() {
             if (members && members.length > 0) {
                 setHouseholdId(members[0].household_id);
             } else {
-                console.log('No household member found');
                 setLoading(false);
             }
         } catch (e) {

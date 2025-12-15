@@ -41,11 +41,11 @@ export default function AuthCallback() {
                     }
 
                     // Success! Session is set and profile exists.
-                    router.replace('/');
+                    setTimeout(() => router.replace('/'), 100);
                 }
             });
         } else {
-            router.replace('/');
+            setTimeout(() => router.replace('/'), 100);
         }
     }, [code]);
 

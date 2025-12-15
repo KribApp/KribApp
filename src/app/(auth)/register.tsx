@@ -49,7 +49,6 @@ export default function Register() {
         // Get the redirect URL for Expo Go / standalone app
         // This creates a URL like: exp://192.168.x.x:8081/--/(auth)/callback
         const redirectUrl = Linking.createURL('(auth)/callback');
-        console.log('Email verification redirect URL:', redirectUrl);
 
         // 1. Sign up with Supabase Auth
         const { data: { session, user }, error } = await supabase.auth.signUp({
