@@ -82,9 +82,13 @@ export default function LandingPage() {
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>© 2025 Krib App. All rights reserved.</Text>
                     <View style={styles.footerLinks}>
-                        <Text style={styles.footerLink}>Privacy</Text>
-                        <Text style={styles.footerLink}>Terms</Text>
-                        <Text style={styles.footerLink}>Contact</Text>
+                        <Pressable onPress={() => router.push('/privacy')}>
+                            <Text style={styles.footerLink}>Privacy</Text>
+                        </Pressable>
+                        {/* <Text style={styles.footerLink}>Terms</Text> */}
+                        <Pressable onPress={() => router.push('/support')}>
+                            <Text style={styles.footerLink}>Contact</Text>
+                        </Pressable>
                     </View>
                 </View>
             </ScrollView>
