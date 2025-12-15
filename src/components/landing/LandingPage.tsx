@@ -23,18 +23,7 @@ export default function LandingPage() {
                         <Text style={styles.logoText}>Krib</Text>
                     </View>
                     <View style={styles.authButtons}>
-                        <Pressable
-                            onPress={() => router.push('/(auth)/login')}
-                            style={({ pressed }) => [styles.loginButton, pressed && styles.buttonPressed]}
-                        >
-                            <Text style={styles.loginButtonText}>Log In</Text>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => router.push('/(auth)/register')}
-                            style={({ pressed }) => [styles.signupButton, pressed && styles.buttonPressed]}
-                        >
-                            <Text style={styles.signupButtonText}>Sign Up</Text>
-                        </Pressable>
+                        {/* Auth buttons removed for landing page */}
                     </View>
                 </View>
 
@@ -54,19 +43,10 @@ export default function LandingPage() {
                         </Text>
 
                         <View style={styles.ctaContainer}>
-                            <Pressable
-                                onPress={() => router.push('/(auth)/register')}
-                                style={({ pressed }) => [styles.primaryCta, pressed && styles.buttonPressed]}
-                            >
-                                <Text style={styles.primaryCtaText}>Get Started for Free</Text>
-                                <ArrowRight size={20} color="#FFF" />
-                            </Pressable>
-                            <Pressable
-                                onPress={() => router.push('/(auth)/login')}
-                                style={({ pressed }) => [styles.secondaryCta, pressed && styles.buttonPressed]}
-                            >
-                                <Text style={styles.secondaryCtaText}>Log In</Text>
-                            </Pressable>
+                            {/* CTA buttons removed */}
+                            <View style={styles.primaryCta}>
+                                <Text style={styles.primaryCtaText}>Download on Web & Mobile</Text>
+                            </View>
                         </View>
                     </View>
                 </View>
