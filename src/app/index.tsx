@@ -3,6 +3,7 @@ import { View, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useHousehold } from '../context/HouseholdContext';
 import { KribTheme } from '../theme/theme';
+import LandingPage from '../components/landing/LandingPage';
 
 /**
  * Entry point that handles initial routing based on auth and household state.
@@ -11,44 +12,56 @@ import { KribTheme } from '../theme/theme';
 export default function Index() {
     const { user, household, loading } = useHousehold();
 
+    // Use effect for redirects ONLY when we are sure we want to redirect (i.e. logged in)
     useEffect(() => {
         if (loading) return;
 
-        if (!user) {
-            // Not logged in - go to login
-            router.replace('/(auth)/login');
-        } else if (!household) {
-            // Logged in but no household - go to household start
-            router.replace('/(auth)/household-start');
-        } else {
-            // Logged in with household - go to dashboard
-            router.replace('/(app)/dashboard');
+        if (user) {
+            if (!household) {
+                // Logged in but no household - go to household start
+                router.replace('/(auth)/household-start');
+            } else {
+                // Logged in with household - go to dashboard
+                router.replace('/(app)/dashboard');
+            }
         }
+        // If !user, we do NOTHING (stay here and render LandingPage)
+        // previously: router.replace('/(auth)/login');
     }, [loading, user, household]);
 
-    // Always show loading screen while determining state
-    return (
-        <View style={styles.container}>
-            <Image
-                source={require('../../assets/krib-logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-            />
-            <ActivityIndicator size="large" color={KribTheme.colors.primary} />
-        </View>
-    );
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <Image
+                    source={require('../../assets/krib-logo.png')}
+                    style={styles.logo}
+                    resizeMode="contain"
+                />
+                <ActivityIndicator size="large" color={KribTheme.colors.primary} />
+            </View>
+        );
+    }
+
+    // If we are not logged in (and not loading), show the Landing Page
+    if (!user) {
+        return <LandingPage />;
+    }
+
+    // If user exists, we are redirecting (useEffect handles it), return null or loading
+    return null;
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#F4F5F7',
-    },
-    logo: {
-        width: 150,
-        height: 150,
-        marginBottom: 32,
-    },
-});
+    const styles = StyleSheet.create({
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#F4F5F7',
+        },
+        logo: {
+            width: 150,
+            height: 150,
+            marginBottom: 32,
+        },
+    });
