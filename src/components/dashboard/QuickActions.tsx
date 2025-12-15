@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { KribTheme } from '../../theme/theme';
-import { ShoppingCart, CheckSquare, Plus, Calculator, MessageCircle } from 'lucide-react-native';
+import { ShoppingCart, CheckSquare, Plus, Calculator, MessageCircle, Calendar, DollarSign } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export function QuickActions({ onAction }: { onAction?: (action: string) => void }) {
@@ -9,40 +9,46 @@ export function QuickActions({ onAction }: { onAction?: (action: string) => void
 
     const actions = [
         {
+            id: 'chat',
+            label: 'Chat',
+            icon: <MessageCircle size={24} color={KribTheme.colors.primary} />,
+            onPress: () => router.push('/(app)/chat')
+        },
+        {
             id: 'groceries',
-            label: 'Boodschap',
+            label: 'Boodschappen',
             icon: <ShoppingCart size={24} color={KribTheme.colors.primary} />,
             onPress: () => router.push('/(app)/groceries')
         },
         {
+            id: 'agenda',
+            label: 'Agenda',
+            icon: <Calendar size={24} color={KribTheme.colors.primary} />,
+            onPress: () => router.push('/(app)/agenda')
+        },
+        {
             id: 'chore',
-            label: 'Taak',
+            label: 'Huishouden',
             icon: <CheckSquare size={24} color={KribTheme.colors.primary} />,
             onPress: () => router.push('/(app)/chores')
         },
         {
             id: 'expense',
-            label: 'Uitgave',
-            icon: <Plus size={24} color={KribTheme.colors.primary} />,
+            label: 'Financiën',
+            icon: <DollarSign size={24} color={KribTheme.colors.primary} />,
             onPress: () => router.push('/(app)/finances')
         },
         {
             id: 'turf',
-            label: 'Turven', // Or Turflijstjes
+            label: 'Turven',
             icon: <Calculator size={24} color={KribTheme.colors.primary} />,
             onPress: () => router.push('/(app)/turf')
-        },
-        {
-            id: 'chat',
-            label: 'Chat',
-            icon: <MessageCircle size={24} color={KribTheme.colors.primary} />,
-            onPress: () => router.push('/(app)/chat')
         }
     ];
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Snelle Acties</Text>
+            <Text style={styles.title}>Shortcuts</Text>
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}

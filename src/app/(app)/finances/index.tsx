@@ -1,207 +1,317 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image, SectionList, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../services/supabase';
-import { Plus, Wallet, ChevronRight } from 'lucide-react-native';
+import { Plus, Wallet, FileText, ArrowRight, TrendingUp, RotateCcw } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { KribTheme } from '../../../theme/theme';
 import { DrawerToggleButton } from '@react-navigation/drawer';
 import { useRouter } from 'expo-router';
+import AddExpenseModal from '../../../components/finances/AddExpenseModal';
+import ExpenseDetailModal from '../../../components/finances/ExpenseDetailModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function FinancesList() {
+export default function FinancesFeed() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [householdId, setHouseholdId] = useState<string | null>(null);
-    const [lists, setLists] = useState<any[]>([]);
+    const [refreshing, setRefreshing] = useState(false);
 
-    // New List Form
+    // Data
+    const [expenses, setExpenses] = useState<any[]>([]);
+    const [groupedExpenses, setGroupedExpenses] = useState<any[]>([]);
+    const [householdId, setHouseholdId] = useState<string | null>(null);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<string | null>(null);
+    const [members, setMembers] = useState<any[]>([]);
+
+    // Modals
     const [modalVisible, setModalVisible] = useState(false);
-    const [newListName, setNewListName] = useState('');
-    const [creating, setCreating] = useState(false);
+    const [selectedExpense, setSelectedExpense] = useState<any>(null);
 
     useEffect(() => {
-        fetchHouseholdAndUser();
+        fetchInitialData();
     }, []);
 
-    useEffect(() => {
-        if (householdId) {
-            fetchLists();
-            const subscription = subscribeToLists();
-            return () => {
-                subscription.unsubscribe();
-            };
-        }
-    }, [householdId]);
-
-    async function fetchHouseholdAndUser() {
+    const fetchInitialData = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                setLoading(false);
-                return;
-            }
+            if (!user) return;
+            setCurrentUserId(user.id);
 
             const { data: member } = await supabase
                 .from('household_members')
-                .select('household_id')
+                .select('household_id, role')
                 .eq('user_id', user.id)
                 .single();
 
             if (member) {
                 setHouseholdId(member.household_id);
-            } else {
-                // User is not in a household
-                setLoading(false);
+                setUserRole(member.role);
+
+                // Fetch members for the modal dropdown
+                const { data: hhMembers } = await supabase
+                    .from('household_members')
+                    .select('user_id, role, users(username, profile_picture_url)')
+                    .eq('household_id', member.household_id);
+
+                if (hhMembers) setMembers(hhMembers);
+
+                // Fetch Expenses
+                await fetchExpenses(member.household_id);
             }
         } catch (error) {
-            console.error('Error fetching user/household:', error);
-            setLoading(false);
-        }
-    }
-
-    async function fetchLists() {
-        if (!householdId) return;
-
-        try {
-            const { data, error } = await supabase
-                .from('expense_lists')
-                .select('*, expenses(amount)')
-                .eq('household_id', householdId)
-                .order('created_at', { ascending: false });
-
-            if (data) {
-                setLists(data);
-            }
-        } catch (error) {
-            console.error('Error fetching lists:', error);
+            console.error('Error init finances:', error);
         } finally {
             setLoading(false);
         }
-    }
+    };
 
-    function subscribeToLists() {
-        return supabase
-            .channel('expense_lists')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'expense_lists',
-                    filter: `household_id=eq.${householdId}`,
-                },
-                () => {
-                    fetchLists();
-                }
-            )
-            .subscribe();
-    }
+    const fetchExpenses = async (hhId: string) => {
+        try {
+            const { data } = await supabase
+                .from('expenses')
+                .select('*, payer:users(username)')
+                .eq('household_id', hhId)
+                .order('created_at', { ascending: false });
 
-    async function createList() {
-        if (!newListName.trim() || !householdId) return;
-        setCreating(true);
-
-        const { error } = await supabase
-            .from('expense_lists')
-            .insert([
-                {
-                    household_id: householdId,
-                    name: newListName.trim(),
-                }
-            ]);
-
-        if (error) {
-            Alert.alert('Error', 'Kon lijst niet aanmaken.');
-        } else {
-            setNewListName('');
-            setModalVisible(false);
-            fetchLists();
+            if (data) {
+                setExpenses(data);
+                groupExpenses(data);
+            }
+        } catch (error) {
+            console.error('Error fetching expenses:', error);
         }
-        setCreating(false);
-    }
+    };
 
-    const renderItem = ({ item }: { item: any }) => (
+    const groupExpenses = (data: any[]) => {
+        const active = data.filter(e => !e.is_settled);
+        const settled = data.filter(e => e.is_settled);
+
+        const group = (items: any[], type: 'ACTIVE' | 'SETTLED') => {
+            const sections: any[] = [];
+            const today = new Date().toDateString();
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toDateString();
+
+            items.forEach(expense => {
+                const date = new Date(expense.created_at);
+                const dateStr = date.toDateString();
+
+                let title = date.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+                if (dateStr === today) title = 'Vandaag';
+                else if (dateStr === yesterdayStr) title = 'Gisteren';
+
+                title = title.charAt(0).toUpperCase() + title.slice(1);
+
+                const existingSection = sections.find(s => s.title === title);
+                if (existingSection) {
+                    existingSection.data.push(expense);
+                } else {
+                    sections.push({ title, data: [expense], type });
+                }
+            });
+            return sections;
+        };
+
+        const activeSections = group(active, 'ACTIVE');
+        const settledSections = group(settled, 'SETTLED');
+
+        // If we have settled items, mark the first settled section to show the separator
+        if (settledSections.length > 0) {
+            settledSections[0].showSettledSeparator = true;
+        }
+
+        setGroupedExpenses([...activeSections, ...settledSections]);
+    };
+
+    const handleResetBalance = () => {
+        Alert.alert(
+            "Balans resetten",
+            "Weet je zeker dat je de balans wilt verrekenen? Alle openstaande uitgaven worden gemarkeerd als verrekend.",
+            [
+                { text: "Nee", style: "cancel" },
+                {
+                    text: "Ja",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            setLoading(true);
+                            if (!householdId || !currentUserId) return;
+
+                            // 1. Mark all active expenses as settled
+                            const { error: updateError } = await supabase
+                                .from('expenses')
+                                .update({
+                                    is_settled: true,
+                                    settled_at: new Date().toISOString()
+                                })
+                                .eq('household_id', householdId)
+                                .eq('is_settled', false);
+
+                            if (updateError) throw updateError;
+
+                            // 2. Get user name for notification
+                            const { data: userData } = await supabase
+                                .from('users')
+                                .select('username')
+                                .eq('id', currentUserId)
+                                .single();
+
+                            const username = userData?.username || 'Een beheerder';
+
+                            // 3. Create notification
+                            const { error: notifError } = await supabase
+                                .from('notifications')
+                                .insert({
+                                    household_id: householdId,
+                                    type: 'SYSTEM',
+                                    title: 'Huisrekening verrekend',
+                                    message: `${username} heeft de huisrekening verrekend.`,
+                                    is_resolved: false
+                                });
+
+                            if (notifError) {
+                                console.error('Error creating notification:', notifError);
+                            }
+
+                            // 4. Refresh data
+                            await fetchExpenses(householdId);
+                            Alert.alert("Success", "De balans is succesvol verrekend.");
+                        } catch (err: any) {
+                            console.error('Reset error:', err);
+                            Alert.alert('Error', 'Kon de balans niet resetten: ' + err.message);
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleRefresh = async () => {
+        if (!householdId) return;
+        setRefreshing(true);
+        await fetchExpenses(householdId);
+        setRefreshing(false);
+    };
+
+    const handleExpensePress = (item: any) => {
+        setSelectedExpense(item);
+    };
+
+    const renderExpense = ({ item }: { item: any }) => (
         <TouchableOpacity
-            style={styles.listCard}
-            onPress={() => router.push(`/finances/${item.id}`)}
+            style={[styles.card, item.is_settled && styles.cardSettled]}
+            activeOpacity={0.7}
+            onPress={() => handleExpensePress(item)}
         >
             <View style={styles.iconContainer}>
-                <Wallet size={24} color={KribTheme.colors.primary} />
+                <Wallet size={20} color={item.is_settled ? '#9CA3AF' : KribTheme.colors.primary} />
             </View>
-            <View style={styles.listInfo}>
-                <Text style={styles.listName}>{item.name}</Text>
-                <Text style={styles.listMeta}>
-                    {item.expenses?.length || 0} uitgaven • Totaal: €{item.expenses?.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0).toFixed(2)}
-                </Text>
+            <View style={styles.details}>
+                <View style={styles.topRow}>
+                    <Text style={[styles.description, item.is_settled && styles.textSettled]} numberOfLines={1}>
+                        {item.description}
+                    </Text>
+                    <Text style={[styles.amount, item.is_settled && styles.textSettled]}>
+                        € {item.amount.toFixed(2)}
+                    </Text>
+                </View>
+                <View style={styles.bottomRow}>
+                    <Text style={styles.payer}>
+                        Betaald door <Text style={{ fontWeight: '600' }}>{item.payer?.username || 'Onbekend'}</Text>
+                    </Text>
+                </View>
+                {item.receipt_url && (
+                    <View style={styles.receiptBadge}>
+                        <FileText size={12} color={KribTheme.colors.text.secondary} />
+                        <Text style={styles.receiptText}>Bonnetje</Text>
+                    </View>
+                )}
             </View>
-            <ChevronRight size={20} color={KribTheme.colors.text.secondary} />
         </TouchableOpacity>
+    );
+
+    const renderSectionHeader = ({ section }: { section: any }) => (
+        <View>
+            {section.showSettledSeparator && (
+                <View style={styles.settledSeparator}>
+                    <View style={styles.separatorLine} />
+                    <Text style={styles.separatorText}>VERREKEND</Text>
+                    <View style={styles.separatorLine} />
+                </View>
+            )}
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionHeaderText}>{section.title}</Text>
+            </View>
+        </View>
     );
 
     return (
         <View style={styles.container}>
             <StatusBar style="light" />
+
             <View style={styles.header}>
-                <DrawerToggleButton tintColor="#FFFFFF" />
-                <Text style={styles.headerTitle}>Mijn Lijstjes</Text>
-                <View style={{ width: 24 }} />
+                <View style={styles.headerTop}>
+                    <DrawerToggleButton tintColor="#FFFFFF" />
+                    <Text style={styles.headerTitle}>Financiën</Text>
+                    <View style={{ flexDirection: 'row', gap: 16 }}>
+                        {(userRole === 'ADMIN' || userRole === 'FISCUS') && (
+                            <TouchableOpacity onPress={handleResetBalance}>
+                                <RotateCcw size={24} color="#EF4444" />
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity onPress={() => router.push('/finances/balance')}>
+                            <TrendingUp size={24} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
             </View>
 
             {loading ? (
-                <ActivityIndicator style={{ marginTop: 20 }} />
+                <ActivityIndicator style={{ marginTop: 40 }} color={KribTheme.colors.primary} />
             ) : (
-                <FlatList
-                    data={lists}
-                    renderItem={renderItem}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.content}
+                <SectionList
+                    sections={groupedExpenses}
+                    renderItem={renderExpense}
+                    renderSectionHeader={renderSectionHeader}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={styles.list}
+                    refreshing={refreshing}
+                    onRefresh={handleRefresh}
                     ListEmptyComponent={
-                        <View style={styles.emptyList}>
-                            <Text style={styles.emptyText}>Nog geen lijsten. Maak er een aan!</Text>
+                        <View style={styles.empty}>
+                            <Text style={styles.emptyText}>Nog geen uitgaven. Voeg er een toe!</Text>
                         </View>
                     }
+                    stickySectionHeadersEnabled={false}
                 />
             )}
 
             <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-                <Plus size={32} color={KribTheme.colors.primary} />
+                <Plus size={32} color="#FFFFFF" />
             </TouchableOpacity>
 
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <KeyboardAvoidingView
-                    style={styles.modalOverlay}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                >
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Nieuwe Lijst</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={newListName}
-                            onChangeText={setNewListName}
-                            placeholder="Naam van de lijst (bijv. Vakantie)"
-                            placeholderTextColor={KribTheme.colors.text.secondary}
-                            returnKeyType="done"
-                            onSubmitEditing={createList}
-                        />
-                        <View style={styles.modalButtons}>
-                            <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
-                                <Text style={styles.cancelButtonText}>Annuleren</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.createButton} onPress={createList} disabled={creating}>
-                                {creating ? (
-                                    <ActivityIndicator color="#FFFFFF" />
-                                ) : (
-                                    <Text style={styles.createButtonText}>Aanmaken</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </KeyboardAvoidingView>
-            </Modal>
+            {householdId && currentUserId && (
+                <AddExpenseModal
+                    visible={modalVisible}
+                    onClose={() => setModalVisible(false)}
+                    onSuccess={() => {
+                        setModalVisible(false);
+                        handleRefresh();
+                    }}
+                    householdId={householdId}
+                    members={members}
+                    currentUserId={currentUserId}
+                />
+            )}
+
+            <ExpenseDetailModal
+                visible={!!selectedExpense}
+                onClose={() => setSelectedExpense(null)}
+                expense={selectedExpense}
+            />
         </View>
     );
 }
@@ -212,146 +322,144 @@ const styles = StyleSheet.create({
         backgroundColor: KribTheme.colors.background,
     },
     header: {
+        paddingTop: 60, // approximate status bar
+        paddingBottom: 16,
+        paddingHorizontal: 16,
+        backgroundColor: KribTheme.colors.background,
+    },
+    headerTop: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingTop: 60,
-        paddingBottom: 16,
-        backgroundColor: KribTheme.colors.background,
     },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         color: '#FFFFFF',
     },
-    content: {
+    list: {
         padding: 16,
+        paddingBottom: 100,
     },
-    listCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+    sectionHeader: {
+        paddingVertical: 8,
+        marginBottom: 8,
+        marginTop: 16,
+    },
+    sectionHeaderText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: 'rgba(255,255,255,0.6)',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    card: {
         backgroundColor: KribTheme.colors.surface,
+        borderRadius: 16,
         padding: 16,
-        borderRadius: KribTheme.borderRadius.l,
         marginBottom: 12,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
         ...KribTheme.shadows.card,
     },
+    cardSettled: {
+        opacity: 0.6,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+    },
     iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#EFF6FF', // Light blue
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(37, 99, 235, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 16,
+        marginRight: 12,
+        marginTop: 4,
     },
-    listInfo: {
+    details: {
         flex: 1,
     },
-    listName: {
+    topRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+        gap: 8,
+    },
+    description: {
         fontSize: 16,
         fontWeight: '600',
         color: KribTheme.colors.text.primary,
-        marginBottom: 4,
+        flex: 1,
     },
-    listMeta: {
-        fontSize: 14,
+    amount: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: KribTheme.colors.text.primary,
+    },
+    textSettled: {
+        textDecorationLine: 'line-through',
+        color: '#9CA3AF',
+    },
+    bottomRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    payer: {
+        fontSize: 12,
         color: KribTheme.colors.text.secondary,
     },
-    emptyList: {
+    date: {
+        fontSize: 12,
+        color: KribTheme.colors.text.secondary,
+    },
+    receiptBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
+        gap: 4,
+    },
+    receiptText: {
+        fontSize: 12,
+        color: KribTheme.colors.text.secondary,
+    },
+    empty: {
         alignItems: 'center',
         marginTop: 40,
     },
     emptyText: {
-        textAlign: 'center',
         color: '#FFFFFF',
         fontStyle: 'italic',
-        marginTop: 24,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        marginBottom: 24,
-        gap: 12,
-    },
-    input: {
-        flex: 1,
-        backgroundColor: KribTheme.colors.background,
-        borderRadius: KribTheme.borderRadius.m,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        fontSize: 16,
-        color: '#FFFFFF',
-    },
-    addButton: {
-        backgroundColor: '#FFFFFF',
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...KribTheme.shadows.card,
-    },
-
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        padding: 24,
-    },
-    modalContent: {
-        backgroundColor: KribTheme.colors.surface,
-        borderRadius: KribTheme.borderRadius.xl,
-        padding: 24,
-        ...KribTheme.shadows.floating,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: KribTheme.colors.text.primary,
-        marginBottom: 24,
-        textAlign: 'center',
     },
     fab: {
         position: 'absolute',
-        bottom: 24,
+        bottom: 32,
         right: 24,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#FFFFFF',
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: KribTheme.colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
         ...KribTheme.shadows.floating,
     },
-    modalButtons: {
+    settledSeparator: {
         flexDirection: 'row',
-        gap: 12,
+        alignItems: 'center',
         marginTop: 24,
+        marginBottom: 16,
+        gap: 12,
     },
-    cancelButton: {
+    separatorLine: {
         flex: 1,
-        padding: 16,
-        borderRadius: 12,
-        backgroundColor: KribTheme.colors.background,
-        alignItems: 'center',
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.1)',
     },
-    cancelButtonText: {
-        color: '#FFFFFF',
-        fontWeight: '600',
-        fontSize: 16,
-    },
-    createButton: {
-        flex: 1,
-        padding: 16,
-        borderRadius: 12,
-        backgroundColor: KribTheme.colors.primary,
-        alignItems: 'center',
-    },
-    createButtonText: {
-        color: KribTheme.colors.text.inverse,
-        fontWeight: '600',
-        fontSize: 16,
+    separatorText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: 'rgba(255,255,255,0.3)',
+        letterSpacing: 2,
     },
 });

@@ -306,6 +306,8 @@ export interface Database {
                     description: string
                     receipt_url: string | null
                     created_at: string
+                    is_settled: boolean
+                    settled_at: string | null
                 }
                 Insert: {
                     id?: string
@@ -315,6 +317,8 @@ export interface Database {
                     description: string
                     receipt_url?: string | null
                     created_at?: string
+                    is_settled?: boolean
+                    settled_at?: string | null
                 }
                 Update: {
                     id?: string
@@ -324,6 +328,8 @@ export interface Database {
                     description?: string
                     receipt_url?: string | null
                     created_at?: string
+                    is_settled?: boolean
+                    settled_at?: string | null
                 }
             }
             expense_shares: {

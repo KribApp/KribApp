@@ -202,7 +202,7 @@ export default function Chat() {
     async function pickImage() {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: false,
                 quality: 0.7,
                 base64: true,
