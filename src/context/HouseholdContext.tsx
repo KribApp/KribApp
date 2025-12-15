@@ -35,7 +35,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                 fetchData();
-            } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESH_FAILED') {
+            } else if (event === 'SIGNED_OUT') {
                 setUser(null);
                 setHousehold(null);
                 setMember(null);
@@ -51,7 +51,26 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
 
     async function fetchData() {
         try {
-            const { data: { user: authUser } } = await supabase.auth.getUser();
+            const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+            if (authError) {
+                // Ignore "Auth session missing!" error - it just means not logged in
+                if (authError.message.includes('Auth session missing') || authError.name === 'AuthSessionMissingError') {
+                    // console.log('No auth session found (normal for first launch)');
+                    setLoading(false);
+                    return;
+                }
+
+                console.error('Auth error in context:', authError);
+
+                if (authError.message.includes('Refresh Token') || authError.message.includes('refresh_token_not_found')) {
+                    console.log('Invalid refresh token detected. Signing out...');
+                    await supabase.auth.signOut();
+                    setLoading(false);
+                    router.replace('/(auth)/login');
+                    return;
+                }
+            }
 
             if (!authUser) {
                 setLoading(false);
@@ -68,11 +87,9 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
             if (userError) {
                 console.error('Error fetching user profile:', userError);
             } else if (!userProfile) {
-                // User exists in Auth but not in public.users (e.g. after DB reset)
-                console.warn('User profile not found. Signing out.');
-                alert('Account Error: Your user profile was not found. Please register again.');
-                await supabase.auth.signOut();
-                router.replace('/(auth)/login');
+                // User exists in Auth but not in public.users (e.g. after DB reset or during registration)
+                console.warn('User profile not found. Waiting for creation...');
+                // Do NOT sign out here. Let the registration/callback flow handle the insertion.
                 return;
             } else {
                 setUser(userProfile);

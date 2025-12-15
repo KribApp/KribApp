@@ -87,6 +87,8 @@ export const Strings = {
         notificationSent: 'Melding verstuurd',
         notificationSentMessage: (itemName: string) => `Huisgenoten zijn gewaarschuwd dat ${itemName} op is.`,
         notificationError: 'Kon melding niet versturen.',
+        clearCompletedTitle: 'Gereed verwijderen',
+        clearCompletedConfirm: 'Weet je zeker dat je alle afgevinkte items wilt verwijderen?',
     },
 
     // ============================================================================

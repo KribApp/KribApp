@@ -53,7 +53,7 @@ export function useChoresData() {
         if (!householdId) return;
         const { data } = await supabase
             .from('household_members')
-            .select('user_id, users(username)')
+            .select('user_id, users(username, profile_picture_url)')
             .eq('household_id', householdId);
 
         if (data) {

@@ -61,7 +61,7 @@ export default function HallOfFame() {
             return;
         }
         const { data, error } = await supabase
-            .from('hall_of_fame')
+            .from('grocery_favorites')
             .select('*')
             .eq('household_id', householdId)
             .order('created_at', { ascending: false });
@@ -86,11 +86,11 @@ export default function HallOfFame() {
         setNewRecipeLink('');
 
         const { data, error } = await supabase
-            .from('hall_of_fame')
+            .from('grocery_favorites')
             .insert([
                 {
                     household_id: householdId,
-                    recipe_name: name,
+                    name: name,
                     link_url: link,
                 }
             ])
@@ -106,7 +106,7 @@ export default function HallOfFame() {
 
     async function deleteRecipe(id: string) {
         const { error } = await supabase
-            .from('hall_of_fame')
+            .from('grocery_favorites')
             .delete()
             .eq('id', id);
 
@@ -114,6 +114,39 @@ export default function HallOfFame() {
             console.error(error);
         } else {
             setRecipes(prev => prev.filter(r => r.id !== id));
+        }
+    }
+
+    async function addToList(item: any) {
+        if (!householdId) return;
+
+        // Fetch current max position
+        const { data: currentItems } = await supabase
+            .from('shopping_items')
+            .select('position')
+            .eq('household_id', householdId);
+
+        const maxPos = currentItems && currentItems.length > 0
+            ? Math.max(...currentItems.map(i => i.position || 0))
+            : 0;
+
+        const { error } = await supabase
+            .from('shopping_items')
+            .insert([
+                {
+                    household_id: householdId,
+                    name: item.name,
+                    added_by_user_id: (await supabase.auth.getUser()).data.user?.id,
+                    is_checked: false,
+                    is_pinned: false,
+                    position: maxPos + 1
+                }
+            ]);
+
+        if (!error) {
+            Alert.alert('Gelukt', `"${item.name}" toegevoegd aan boodschappenlijst.`);
+        } else {
+            Alert.alert('Error', 'Kon item niet toevoegen.');
         }
     }
 
@@ -126,10 +159,13 @@ export default function HallOfFame() {
     const renderItem = ({ item }: { item: any }) => (
         <View style={styles.itemContainer}>
             <View style={styles.textContainer}>
-                <Text style={styles.itemText}>{item.recipe_name}</Text>
+                <Text style={styles.itemText}>{item.name}</Text>
             </View>
 
             <View style={styles.actions}>
+                <TouchableOpacity onPress={() => addToList(item)} style={styles.actionButton}>
+                    <Plus size={20} color={KribTheme.colors.success} />
+                </TouchableOpacity>
                 {item.link_url && (
                     <TouchableOpacity onPress={() => openLink(item.link_url)} style={styles.actionButton}>
                         <ExternalLink size={20} color={KribTheme.colors.primary} />
@@ -144,7 +180,7 @@ export default function HallOfFame() {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <ArrowLeft size={24} color="#FFFFFF" />

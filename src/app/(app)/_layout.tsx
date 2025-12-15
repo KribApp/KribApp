@@ -14,7 +14,7 @@ export default function AppLayout() {
                 drawerType: dimensions.width >= 768 ? 'permanent' : 'front',
                 drawerStyle: {
                     width: 300,
-                    backgroundColor: KribTheme.colors.surface,
+                    backgroundColor: KribTheme.colors.background,
                 },
                 drawerActiveTintColor: KribTheme.colors.primary,
                 drawerInactiveTintColor: KribTheme.colors.text.secondary,

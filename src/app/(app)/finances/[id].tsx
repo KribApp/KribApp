@@ -1,11 +1,13 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../services/supabase';
-import { Plus, DollarSign, ArrowLeft, User, ArrowRight } from 'lucide-react-native';
+import { Plus, DollarSign, ArrowLeft, User, ArrowRight, Camera, FileText } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KribTheme } from '../../../theme/theme';
+import * as ImagePicker from 'expo-image-picker';
+import { decode } from 'base64-arraybuffer';
 
 export default function ListDetail() {
     const { id } = useLocalSearchParams();
@@ -25,6 +27,8 @@ export default function ListDetail() {
     const [description, setDescription] = useState('');
     const [saving, setSaving] = useState(false);
     const [payerId, setPayerId] = useState<string | null>(null);
+    const [receipt, setReceipt] = useState<string | null>(null);
+    const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
     useEffect(() => {
         fetchUser();
@@ -159,6 +163,29 @@ export default function ListDetail() {
         setSettlements(results);
     }
 
+
+    // REDO of function block to include asset state and upload logic properly.
+
+    const [receiptAsset, setReceiptAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+
+    async function pickReceipt() {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 0.7,
+                base64: true,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                setReceipt(result.assets[0].uri);
+                setReceiptAsset(result.assets[0]);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Kon afbeelding niet openen.');
+        }
+    }
+
     async function addExpense() {
         if (!amount || !description || !id || !userId) return;
 
@@ -171,19 +198,39 @@ export default function ListDetail() {
             return;
         }
 
+        let uploadedReceiptUrl = null;
+
+        if (receiptAsset && receiptAsset.base64) {
+            const fileName = `${id}/${Date.now()}_receipt.jpg`;
+            try {
+                const { error: uploadError } = await supabase.storage
+                    .from('receipts')
+                    .upload(fileName, decode(receiptAsset.base64), {
+                        contentType: 'image/jpeg',
+                    });
+
+                if (!uploadError) {
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('receipts')
+                        .getPublicUrl(fileName);
+                    uploadedReceiptUrl = publicUrl;
+                }
+            } catch (e) {
+                console.error('Receipt upload failed', e);
+            }
+        }
+
         // 1. Create Expense
         const { data: expense, error } = await supabase
             .from('expenses')
             .insert([
                 {
                     list_id: id,
-                    // We need household_id for RLS policies on expenses table if we didn't update them...
-                    // Wait, expenses table has household_id NOT NULL. We need to fetch it or pass it.
-                    // Let's fetch it from the list details we have.
                     household_id: (await supabase.from('expense_lists').select('household_id').eq('id', id).single()).data?.household_id,
                     payer_user_id: payerId || userId,
                     amount: cost,
                     description: description,
+                    receipt_url: uploadedReceiptUrl
                 }
             ])
             .select()
@@ -211,6 +258,8 @@ export default function ListDetail() {
         setModalVisible(false);
         setAmount('');
         setDescription('');
+        setReceipt(null);
+        setReceiptAsset(null);
         fetchExpenses(); // Refresh
     }
 
@@ -222,7 +271,10 @@ export default function ListDetail() {
                 </Text>
             </View>
             <View style={styles.expenseDetails}>
-                <Text style={styles.expenseTitle}>{item.description}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.expenseTitle}>{item.description}</Text>
+                    {item.receipt_url && <FileText size={14} color={KribTheme.colors.text.secondary} />}
+                </View>
                 <Text style={styles.expensePayer}>{item.payer?.username} betaalde</Text>
             </View>
             <Text style={styles.expenseAmount}>€ {item.amount.toFixed(2)}</Text>
@@ -340,12 +392,12 @@ export default function ListDetail() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ArrowLeft size={24} color="#111827" />
+                    <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{listName}</Text>
                 <View style={{ width: 24 }} />
@@ -439,8 +491,26 @@ export default function ListDetail() {
                             onChangeText={setDescription}
                             placeholder="Wat heb je gekocht?"
                             placeholderTextColor={KribTheme.colors.text.secondary}
+
                             returnKeyType="next"
                         />
+
+                        <TouchableOpacity
+                            style={styles.receiptButton}
+                            onPress={pickReceipt}
+                        >
+                            {receipt ? (
+                                <View style={styles.receiptPreview}>
+                                    <Image source={{ uri: receipt }} style={styles.receiptImage} />
+                                    <Text style={styles.receiptText}>Bonnetje geselecteerd</Text>
+                                </View>
+                            ) : (
+                                <View style={styles.receiptPlaceholder}>
+                                    <Camera size={20} color={KribTheme.colors.text.secondary} />
+                                    <Text style={styles.receiptText}>Bonnetje toevoegen</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
 
                         <Text style={styles.label}>Bedrag (€)</Text>
                         <TextInput
@@ -493,7 +563,7 @@ export default function ListDetail() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: KribTheme.colors.background,
     },
     header: {
         flexDirection: 'row',
@@ -501,9 +571,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.background,
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
+        borderBottomColor: KribTheme.colors.background,
     },
     backButton: {
         padding: 4,
@@ -511,15 +581,15 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#111827',
+        color: '#FFFFFF',
     },
     tabs: {
         flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.background,
         paddingHorizontal: 4,
         paddingBottom: 0,
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
+        borderBottomColor: KribTheme.colors.background,
     },
     tab: {
         flex: 1,
@@ -529,15 +599,15 @@ const styles = StyleSheet.create({
         borderBottomColor: 'transparent',
     },
     activeTab: {
-        borderBottomColor: '#2563EB',
+        borderBottomColor: KribTheme.colors.primary,
     },
     tabText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#6B7280',
+        color: KribTheme.colors.text.secondary,
     },
     activeTabText: {
-        color: '#2563EB',
+        color: KribTheme.colors.primary,
     },
     content: {
         flex: 1,
@@ -555,7 +625,7 @@ const styles = StyleSheet.create({
     expenseCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.surface,
         padding: 16,
         borderRadius: 12,
         marginBottom: 8,
@@ -581,22 +651,22 @@ const styles = StyleSheet.create({
     expenseTitle: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#111827',
+        color: KribTheme.colors.text.primary,
     },
     expensePayer: {
         fontSize: 12,
-        color: '#6B7280',
+        color: KribTheme.colors.text.secondary,
     },
     expenseAmount: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#111827',
+        color: KribTheme.colors.text.primary,
     },
     balanceRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.surface,
         padding: 16,
         borderRadius: 12,
         marginBottom: 8,
@@ -620,7 +690,7 @@ const styles = StyleSheet.create({
     },
     balanceUsername: {
         fontSize: 16,
-        color: '#111827',
+        color: KribTheme.colors.text.primary,
     },
     balanceAmount: {
         fontSize: 16,
@@ -630,7 +700,7 @@ const styles = StyleSheet.create({
     negative: { color: '#EF4444' },
     neutral: { color: '#6B7280' },
     settlementCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.surface,
         padding: 16,
         borderRadius: 12,
         marginBottom: 8,
@@ -643,23 +713,23 @@ const styles = StyleSheet.create({
     },
     settlementText: {
         fontSize: 16,
-        color: '#374151',
+        color: KribTheme.colors.text.primary,
         marginBottom: 4,
     },
     settlementAmount: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#111827',
+        color: KribTheme.colors.text.primary,
     },
     settleButton: {
-        backgroundColor: '#DBEAFE',
+        backgroundColor: KribTheme.colors.primary,
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 8,
         marginLeft: 12,
     },
     settleButtonText: {
-        color: '#2563EB',
+        color: KribTheme.colors.text.inverse,
         fontWeight: '600',
         fontSize: 14,
     },
@@ -761,5 +831,37 @@ const styles = StyleSheet.create({
     buttonTextSave: {
         color: '#FFFFFF',
         fontWeight: '600',
+    },
+    receiptButton: {
+        backgroundColor: KribTheme.colors.background,
+        borderRadius: 12,
+        marginBottom: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: KribTheme.colors.border,
+        borderStyle: 'dashed',
+    },
+    receiptPlaceholder: {
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    receiptPreview: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 8,
+        gap: 12,
+        backgroundColor: '#F0F9FF',
+    },
+    receiptImage: {
+        width: 40,
+        height: 40,
+        borderRadius: 4,
+    },
+    receiptText: {
+        color: KribTheme.colors.text.secondary,
+        fontSize: 14,
     },
 });

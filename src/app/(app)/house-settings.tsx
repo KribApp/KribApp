@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Switch } from 'react-native';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useHousehold } from '../../context/HouseholdContext';
-import { Save, ArrowLeft, X, Clock, Camera, Link as LinkIcon, Image as ImageIcon } from 'lucide-react-native';
+import { Save, ArrowLeft, X, Clock, Camera, Link as LinkIcon, Image as ImageIcon, MapPin, Hash, LogOut, Users } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -53,9 +53,6 @@ export default function HouseSettings() {
             setNoResponseAction(household.config_no_response_action || 'NO_EAT');
             setInviteCode(household.invite_code || '');
             setDeadlineTime(household.config_deadline_time || '16:00:00');
-            // If it matches a storage URL, assume upload mode (hide link input initially)
-            // But if it's a raw generic URL, maybe show link input?
-            // For simplicity, always hide link input initially unless empty
             setShowLinkInput(!household.photo_url);
         }
     }, [household]);
@@ -64,8 +61,6 @@ export default function HouseSettings() {
         try {
             setUploading(true);
 
-            // Usage of fetch().blob() is unreliable in React Native with some engines.
-            // Using FileSystem + base64 is robust.
             const base64 = await FileSystem.readAsStringAsync(uri, {
                 encoding: 'base64',
             });
@@ -99,7 +94,7 @@ export default function HouseSettings() {
 
     const handlePickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: MediaTypeOptions.Images, // Fixed deprecated property
+            mediaTypes: MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [16, 9],
             quality: 0.8,
@@ -156,13 +151,14 @@ export default function HouseSettings() {
 
             if (error) {
                 console.error('Error updating settings:', error);
+                Alert.alert('Error', 'Kon instellingen niet opslaan.');
             } else {
                 await refreshHousehold();
+                Alert.alert('Succes', 'Instellingen opgeslagen!');
             }
         }
 
         setSaving(false);
-        Alert.alert('Succes', 'Instellingen opgeslagen!');
     }
 
     async function handleLeaveHousehold() {
@@ -204,7 +200,6 @@ export default function HouseSettings() {
                             Alert.alert('Fout', 'Kon huis niet verlaten.');
                             setSaving(false);
                         } else {
-                            // Force refresh or just navigate
                             router.replace('/(auth)/household-start');
                         }
                     }
@@ -216,19 +211,19 @@ export default function HouseSettings() {
     if (contextLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#2563EB" />
+                <ActivityIndicator size="large" color="#FFFFFF" />
             </View>
         );
     }
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ArrowLeft size={24} color="#5D5FEF" />
+                <TouchableOpacity onPress={() => router.replace('/(app)/house-info')} style={styles.backButton}>
+                    <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Instellingen</Text>
+                <Text style={styles.headerTitle}>Huis Instellingen</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -238,99 +233,15 @@ export default function HouseSettings() {
                 keyboardVerticalOffset={100}
             >
                 <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Algemeen</Text>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Naam Huishouden</Text>
-                            <TextInput
-                                style={styles.textInput}
-                                value={name}
-                                onChangeText={setName}
-                                placeholder="Naam"
-                                placeholderTextColor={KribTheme.colors.text.secondary}
-                                editable={isAdmin}
-                            />
-                        </View>
 
-                        {/* Address fields - Read only, set during creation */}
-                        <Text style={styles.addressNote}>Adres (niet te wijzigen na aanmaken)</Text>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Straat</Text>
-                            <TextInput
-                                style={[styles.textInput, styles.disabledInput]}
-                                value={street}
-                                placeholder="Straatnaam"
-                                placeholderTextColor={KribTheme.colors.text.secondary}
-                                editable={false}
-                            />
-                        </View>
-                        <View style={styles.row}>
-                            <View style={[styles.inputGroup, { flex: 1 }]}>
-                                <Text style={styles.label}>Huisnummer</Text>
-                                <TextInput
-                                    style={[styles.textInput, styles.disabledInput]}
-                                    value={houseNumber}
-                                    placeholder="Nr"
-                                    placeholderTextColor={KribTheme.colors.text.secondary}
-                                    editable={false}
-                                />
-                            </View>
-                            <View style={[styles.inputGroup, { flex: 2, marginLeft: 12 }]}>
-                                <Text style={styles.label}>Postcode</Text>
-                                <TextInput
-                                    style={[styles.textInput, styles.disabledInput]}
-                                    value={postalCode}
-                                    placeholder="1234 AB"
-                                    placeholderTextColor={KribTheme.colors.text.secondary}
-                                    editable={false}
-                                />
-                            </View>
-                        </View>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Stad</Text>
-                            <TextInput
-                                style={[styles.textInput, styles.disabledInput]}
-                                value={city}
-                                placeholder="Stad"
-                                placeholderTextColor={KribTheme.colors.text.secondary}
-                                editable={false}
-                            />
-                        </View>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Tijdzone</Text>
-                            <TextInput
-                                style={[styles.textInput, styles.disabledInput]}
-                                value={timezone}
-                                placeholder="Europe/Amsterdam"
-                                placeholderTextColor={KribTheme.colors.text.secondary}
-                                editable={false}
-                            />
-                        </View>
+                    {/* SECTION: GENERAL */}
+                    <View style={styles.sectionHeaderContainer}>
+                        <Text style={styles.sectionHeaderText}>ALGEMEEN</Text>
                     </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Uitnodigingscode</Text>
-                        <Text style={styles.sectionDescription}>
-                            Deel deze code met huisgenoten om ze toe te voegen.
-                        </Text>
-                        <View style={styles.codeContainer}>
-                            <Text style={styles.codeText}>{inviteCode}</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Huis Foto</Text>
-                        <Text style={styles.sectionDescription}>
-                            Kies een foto voor op de homepage of plak een URL.
-                        </Text>
-
+                    <View style={styles.card}>
                         <View style={styles.photoContainer}>
                             {photoUrl ? (
-                                <Image
-                                    source={{ uri: photoUrl }}
-                                    style={styles.photoPreview}
-                                    contentFit="cover"
-                                />
+                                <Image source={{ uri: photoUrl }} style={styles.photoPreview} contentFit="cover" />
                             ) : (
                                 <View style={[styles.photoPreview, styles.photoPlaceholder]}>
                                     <ImageIcon size={32} color={KribTheme.colors.text.secondary} />
@@ -338,22 +249,13 @@ export default function HouseSettings() {
                             )}
 
                             {isAdmin && (
-                                <View style={styles.photoActions}>
-                                    <TouchableOpacity
-                                        style={styles.photoButton}
-                                        onPress={handleChangePhoto}
-                                        disabled={uploading}
-                                    >
-                                        {uploading ? (
-                                            <ActivityIndicator size="small" color="#FFFFFF" />
-                                        ) : (
-                                            <>
-                                                <Camera size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                                                <Text style={styles.photoButtonText}>{Strings.household.changePhoto}</Text>
-                                            </>
-                                        )}
-                                    </TouchableOpacity>
-                                </View>
+                                <TouchableOpacity style={styles.changePhotoButton} onPress={handleChangePhoto} disabled={uploading}>
+                                    {uploading ? (
+                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                    ) : (
+                                        <Camera size={20} color="#FFFFFF" />
+                                    )}
+                                </TouchableOpacity>
                             )}
                         </View>
 
@@ -361,81 +263,163 @@ export default function HouseSettings() {
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}>Foto URL</Text>
                                 <View style={styles.inputWrapper}>
+                                    <LinkIcon size={20} color={KribTheme.colors.text.secondary} style={styles.inputIcon} />
                                     <TextInput
-                                        style={[styles.input, styles.textInput]}
+                                        style={styles.input}
                                         value={photoUrl}
                                         onChangeText={setPhotoUrl}
                                         placeholder="https://example.com/image.jpg"
-                                        placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                                        placeholderTextColor="#9CA3AF"
                                         autoCapitalize="none"
-                                        returnKeyType="done"
-                                        onSubmitEditing={handleSave}
                                     />
                                     {photoUrl.length > 0 && (
-                                        <TouchableOpacity onPress={() => setPhotoUrl('')} style={styles.clearButton}>
+                                        <TouchableOpacity onPress={() => setPhotoUrl('')} style={{ padding: 4 }}>
                                             <X size={20} color="#9CA3AF" />
                                         </TouchableOpacity>
                                     )}
                                 </View>
                             </View>
                         )}
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Naam Huishouden</Text>
+                            <View style={styles.inputWrapper}>
+                                <Users size={20} color={KribTheme.colors.text.secondary} style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.input}
+                                    value={name}
+                                    onChangeText={setName}
+                                    placeholder="Naam"
+                                    placeholderTextColor="#9CA3AF"
+                                    editable={isAdmin}
+                                />
+                            </View>
+                        </View>
                     </View>
 
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Deadline Avondeten (HH:MM)</Text>
-                        <View style={styles.inputWrapper}>
-                            {Platform.OS === 'android' && (
-                                <TouchableOpacity
-                                    style={[styles.input, styles.textInput, { justifyContent: 'center' }]}
-                                    onPress={() => isAdmin && setShowTimePicker(true)}
-                                >
-                                    <Text style={{ color: '#111827' }}>{deadlineTime.substring(0, 5)}</Text>
-                                </TouchableOpacity>
-                            )}
-                            {Platform.OS === 'ios' && (
-                                <DateTimePicker
-                                    value={(() => {
-                                        const [h, m] = deadlineTime.split(':');
-                                        const d = new Date();
-                                        d.setHours(parseInt(h), parseInt(m));
-                                        return d;
-                                    })()}
-                                    mode="time"
-                                    display="default"
-                                    onChange={(event, selectedDate) => {
-                                        if (selectedDate) {
-                                            const hours = selectedDate.getHours().toString().padStart(2, '0');
-                                            const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-                                            setDeadlineTime(`${hours}:${minutes}:00`);
-                                        }
-                                    }}
-                                    style={{ alignSelf: 'flex-start' }}
-                                    disabled={!isAdmin}
-                                    themeVariant="light"
+                    {/* SECTION: LOCATIE */}
+                    <View style={styles.sectionHeaderContainer}>
+                        <Text style={styles.sectionHeaderText}>LOCATIE (ALLEEN LEZEN)</Text>
+                    </View>
+                    <View style={styles.card}>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Adres</Text>
+                            <View style={[styles.inputWrapper, { backgroundColor: '#F3F4F6' }]}>
+                                <MapPin size={20} color={KribTheme.colors.text.secondary} style={styles.inputIcon} />
+                                <TextInput
+                                    style={[styles.input, { color: '#6B7280' }]}
+                                    value={`${street} ${houseNumber}`}
+                                    editable={false}
                                 />
-                            )}
-                            {showTimePicker && Platform.OS === 'android' && (
-                                <DateTimePicker
-                                    value={(() => {
-                                        const [h, m] = deadlineTime.split(':');
-                                        const d = new Date();
-                                        d.setHours(parseInt(h), parseInt(m));
-                                        return d;
-                                    })()}
-                                    mode="time"
-                                    is24Hour={true}
-                                    display="default"
-                                    onChange={(event, selectedDate) => {
-                                        setShowTimePicker(false);
-                                        if (selectedDate) {
-                                            const hours = selectedDate.getHours().toString().padStart(2, '0');
-                                            const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-                                            setDeadlineTime(`${hours}:${minutes}:00`);
-                                        }
-                                    }}
-                                />
-                            )}
+                            </View>
                         </View>
+                        <View style={styles.row}>
+                            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                                <Text style={styles.label}>Postcode</Text>
+                                <View style={[styles.inputWrapper, { backgroundColor: '#F3F4F6' }]}>
+                                    <TextInput style={[styles.input, { color: '#6B7280' }]} value={postalCode} editable={false} />
+                                </View>
+                            </View>
+                            <View style={[styles.inputGroup, { flex: 2, marginLeft: 8 }]}>
+                                <Text style={styles.label}>Stad</Text>
+                                <View style={[styles.inputWrapper, { backgroundColor: '#F3F4F6' }]}>
+                                    <TextInput style={[styles.input, { color: '#6B7280' }]} value={city} editable={false} />
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* SECTION: CONFIG */}
+                    <View style={styles.sectionHeaderContainer}>
+                        <Text style={styles.sectionHeaderText}>EETLIJST CONFIGURATIE</Text>
+                    </View>
+                    <View style={styles.card}>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Deadline Avondeten</Text>
+                            <View style={styles.inputWrapper}>
+                                <Clock size={20} color={KribTheme.colors.text.secondary} style={styles.inputIcon} />
+                                {Platform.OS === 'android' && (
+                                    <TouchableOpacity
+                                        style={[styles.input, { justifyContent: 'center' }]}
+                                        onPress={() => isAdmin && setShowTimePicker(true)}
+                                    >
+                                        <Text style={{ color: '#111827' }}>{deadlineTime.substring(0, 5)}</Text>
+                                    </TouchableOpacity>
+                                )}
+                                {Platform.OS === 'ios' && (
+                                    <DateTimePicker
+                                        value={(() => {
+                                            const [h, m] = deadlineTime.split(':');
+                                            const d = new Date();
+                                            d.setHours(parseInt(h), parseInt(m));
+                                            return d;
+                                        })()}
+                                        mode="time"
+                                        display="default"
+                                        onChange={(event, selectedDate) => {
+                                            if (selectedDate) {
+                                                const hours = selectedDate.getHours().toString().padStart(2, '0');
+                                                const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
+                                                setDeadlineTime(`${hours}:${minutes}:00`);
+                                            }
+                                        }}
+                                        style={{ alignSelf: 'flex-start' }}
+                                        disabled={!isAdmin}
+                                        themeVariant="light"
+                                    />
+                                )}
+                                {showTimePicker && Platform.OS === 'android' && (
+                                    <DateTimePicker
+                                        value={(() => {
+                                            const [h, m] = deadlineTime.split(':');
+                                            const d = new Date();
+                                            d.setHours(parseInt(h), parseInt(m));
+                                            return d;
+                                        })()}
+                                        mode="time"
+                                        is24Hour={true}
+                                        display="default"
+                                        onChange={(event, selectedDate) => {
+                                            setShowTimePicker(false);
+                                            if (selectedDate) {
+                                                const hours = selectedDate.getHours().toString().padStart(2, '0');
+                                                const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
+                                                setDeadlineTime(`${hours}:${minutes}:00`);
+                                            }
+                                        }}
+                                    />
+                                )}
+                            </View>
+                        </View>
+
+                        <View style={styles.settingRow}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingTitle}>Standaard Mee-eten</Text>
+                                <Text style={styles.settingSubtitle}>
+                                    {noResponseAction === 'EAT'
+                                        ? "Iedereen eet mee, tenzij afgemeld"
+                                        : "Niemand eet mee, tenzij aangemeld"}
+                                </Text>
+                            </View>
+                            <Switch
+                                trackColor={{ false: "#E5E7EB", true: "#818CF8" }}
+                                thumbColor={noResponseAction === 'EAT' ? "#5D5FEF" : "#f4f3f4"}
+                                onValueChange={(val) => {
+                                    if (isAdmin) setNoResponseAction(val ? 'EAT' : 'NO_EAT');
+                                }}
+                                value={noResponseAction === 'EAT'}
+                                disabled={!isAdmin}
+                            />
+                        </View>
+                    </View>
+
+                    {/* SECTION: INVITE */}
+                    <View style={styles.sectionHeaderContainer}>
+                        <Text style={styles.sectionHeaderText}>UITNODIGINGSCODE</Text>
+                    </View>
+                    <View style={[styles.card, { alignItems: 'center' }]}>
+                        <Text style={styles.inviteCode}>{inviteCode}</Text>
+                        <Text style={styles.helperText}>Deel deze code met huisgenoten</Text>
                     </View>
 
                     {isAdmin && (
@@ -455,47 +439,18 @@ export default function HouseSettings() {
                         <Text style={styles.warningText}>Alleen beheerders kunnen deze instellingen wijzigen.</Text>
                     )}
 
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Eetlijst Instellingen</Text>
-                        <Text style={styles.sectionDescription}>
-                            Bepaal of huisgenoten standaard mee-eten of niet.
-                        </Text>
-
-                        <View style={styles.settingRow}>
-                            <TouchableOpacity
-                                style={[styles.optionButton, noResponseAction === 'EAT' && styles.optionButtonActive]}
-                                onPress={() => isAdmin && setNoResponseAction('EAT')}
-                                disabled={!isAdmin}
-                            >
-                                <Text style={[styles.optionText, noResponseAction === 'EAT' && styles.optionTextActive]}>
-                                    Standaard Mee-eten
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[styles.optionButton, noResponseAction === 'NO_EAT' && styles.optionButtonActive]}
-                                onPress={() => isAdmin && setNoResponseAction('NO_EAT')}
-                                disabled={!isAdmin}
-                            >
-                                <Text style={[styles.optionText, noResponseAction === 'NO_EAT' && styles.optionTextActive]}>
-                                    Standaard Niet Mee-eten
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                        <Text style={styles.helperText}>
-                            {noResponseAction === 'EAT'
-                                ? "Iedereen eet mee, tenzij ze zich afmelden."
-                                : "Niemand eet mee, tenzij ze zich aanmelden."}
-                        </Text>
+                    {/* DANGER ZONE */}
+                    <View style={[styles.sectionHeaderContainer, { marginTop: 32 }]}>
+                        <Text style={[styles.sectionHeaderText, { color: '#EF4444' }]}>DANGER ZONE</Text>
+                    </View>
+                    <View style={[styles.card, { borderColor: '#EF4444', borderWidth: 1 }]}>
+                        <TouchableOpacity style={styles.leaveButton} onPress={handleLeaveHousehold}>
+                            <LogOut size={20} color="#EF4444" />
+                            <Text style={styles.leaveButtonText}>Verlaat Huis</Text>
+                        </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity
-                        style={[styles.leaveButton, { marginTop: 24 }]}
-                        onPress={handleLeaveHousehold}
-                        disabled={saving}
-                    >
-                        <Text style={styles.leaveButtonText}>Verlaat Huis</Text>
-                    </TouchableOpacity>
+                    <View style={{ height: 40 }} />
                 </ScrollView>
             </KeyboardAvoidingView>
         </View>
@@ -505,12 +460,13 @@ export default function HouseSettings() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.background,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: KribTheme.colors.primary,
     },
     header: {
         flexDirection: 'row',
@@ -519,201 +475,157 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 60,
         paddingBottom: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.primary,
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
     },
     backButton: {
         padding: 4,
     },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#5D5FEF',
-    },
     content: {
         padding: 16,
-        gap: 16, // Add gap between sections
+        paddingTop: 8,
     },
-    section: {
-        marginBottom: 24,
+    sectionHeaderContainer: {
+        marginBottom: 8,
+        marginTop: 16,
+        paddingHorizontal: 4,
     },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#5D5FEF',
-        marginBottom: 4,
-    },
-    sectionDescription: {
-        fontSize: 14,
-        color: '#6B7280',
-        marginBottom: 16,
-    },
-    inputGroup: {
-        marginBottom: 16, // Reduced from 20
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#5D5FEF',
-        marginBottom: 6,
-    },
-    inputWrapper: {
-        position: 'relative',
-        justifyContent: 'center',
-    },
-    input: {
-        flex: 1,
-        paddingVertical: 10,
-        fontSize: 16,
-        color: '#111827',
-    },
-    textInput: {
-        backgroundColor: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: '#5D5FEF',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingRight: 40,
-    },
-    disabledInput: {
-        backgroundColor: '#F3F4F6',
-        borderColor: '#D1D5DB',
-        color: '#6B7280',
-    },
-    addressNote: {
+    sectionHeaderText: {
+        color: 'rgba(255,255,255,0.7)',
         fontSize: 12,
-        color: '#9CA3AF',
-        fontStyle: 'italic',
-        marginBottom: 12,
-        marginTop: 8,
-    },
-    clearButton: {
-        position: 'absolute',
-        right: 10,
-        padding: 4,
-    },
-    saveButton: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 12,
-        borderRadius: 12,
-        marginTop: 4,
-        backgroundColor: '#5D5FEF',
-        ...KribTheme.shadows.card,
-    },
-    saveButtonText: {
-        color: '#FFFFFF',
         fontWeight: 'bold',
-        marginLeft: 8,
-        fontSize: 16,
+        letterSpacing: 1,
     },
-    warningText: {
-        color: '#EF4444',
-        fontSize: 13, // Reduced from 14
-        fontStyle: 'italic',
-        textAlign: 'center',
-        marginTop: 8,
-    },
-    settingRow: {
-        flexDirection: 'column',
-        gap: 8, // Reduced from 12
-        marginBottom: 12,
-    },
-    optionButton: {
-        padding: 12,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#5D5FEF',
-        backgroundColor: 'transparent',
-        alignItems: 'center',
-    },
-    optionButtonActive: {
-        backgroundColor: '#5D5FEF',
-        borderColor: '#5D5FEF',
-        ...KribTheme.shadows.card,
-    },
-    optionText: {
-        fontSize: 16,
-        color: '#5D5FEF',
-        fontWeight: '500',
-    },
-    optionTextActive: {
-        color: '#FFFFFF',
-        fontWeight: 'bold',
-    },
-    helperText: {
-        fontSize: 14,
-        color: '#6B7280',
-        fontStyle: 'italic',
-        textAlign: 'center',
-    },
-    codeContainer: {
+    card: {
         backgroundColor: '#FFFFFF',
-        padding: 20,
         borderRadius: 16,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#5D5FEF',
+        padding: 20,
         ...KribTheme.shadows.card,
-    },
-    codeText: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#5D5FEF',
-        letterSpacing: 6,
-    },
-    leaveButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#FFFFFF',
-        padding: 16,
-        borderRadius: KribTheme.borderRadius.m,
-        borderWidth: 1,
-        borderColor: KribTheme.colors.error,
-        marginBottom: 40,
-    },
-    leaveButtonText: {
-        color: KribTheme.colors.error,
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    row: {
-        flexDirection: 'row',
     },
     photoContainer: {
-        marginBottom: 16,
         alignItems: 'center',
+        marginBottom: 16,
+        position: 'relative',
     },
     photoPreview: {
         width: '100%',
-        height: 200,
+        height: 180,
         borderRadius: 12,
         backgroundColor: '#F3F4F6',
-        marginBottom: 16,
     },
     photoPlaceholder: {
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#D1D5DB',
+        borderColor: '#E5E7EB',
         borderStyle: 'dashed',
     },
-    photoActions: {
-        flexDirection: 'row',
-        gap: 12,
+    changePhotoButton: {
+        position: 'absolute',
+        bottom: -16,
+        right: 16,
+        backgroundColor: '#5D5FEF',
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 3,
+        borderColor: '#FFFFFF',
     },
-    photoButton: {
+    inputGroup: {
+        marginBottom: 16,
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#374151',
+        marginBottom: 6,
+    },
+    inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#5D5FEF',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 8,
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 12,
+        paddingHorizontal: 12,
     },
-    photoButtonText: {
+    inputIcon: {
+        marginRight: 10,
+    },
+    input: {
+        flex: 1,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: '#111827',
+    },
+    row: {
+        flexDirection: 'row',
+    },
+    saveButton: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 14,
+        borderRadius: 12,
+        backgroundColor: KribTheme.colors.primary,
+        marginTop: 24,
+        gap: 8,
+    },
+    saveButtonText: {
         color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    warningText: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 13,
+        fontStyle: 'italic',
+        textAlign: 'center',
+        marginTop: 16,
+    },
+    settingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 8,
+    },
+    settingTitle: {
+        fontSize: 16,
         fontWeight: '600',
-        fontSize: 14,
+        color: '#111827',
+    },
+    settingSubtitle: {
+        fontSize: 12,
+        color: '#6B7280',
+        marginTop: 2,
+    },
+    inviteCode: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#5D5FEF',
+        letterSpacing: 4,
+    },
+    helperText: {
+        fontSize: 12,
+        color: '#6B7280',
+        marginTop: 4,
+    },
+    leaveButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 8,
+        gap: 8,
+    },
+    leaveButtonText: {
+        color: '#EF4444',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });

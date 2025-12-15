@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Image } from 'react-native';
 import { X, ChevronRight, User as UserIcon, Plus } from 'lucide-react-native';
+import { KribTheme } from '../../theme/theme';
 
 interface AssignmentModalProps {
     visible: boolean;
@@ -26,8 +27,8 @@ export function AssignmentModal({ visible, onClose, templates, members, selected
                         <Text style={styles.modalTitle}>
                             {selectedTemplate ? 'Kies Persoon' : 'Kies Taak'}
                         </Text>
-                        <TouchableOpacity onPress={onClose}>
-                            <X size={24} color="#374151" />
+                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                            <X size={24} color={KribTheme.colors.text.primary} />
                         </TouchableOpacity>
                     </View>
 
@@ -40,12 +41,16 @@ export function AssignmentModal({ visible, onClose, templates, members, selected
                                     style={styles.selectionItem}
                                     onPress={() => onSelectTemplate(item)}
                                 >
-                                    <Text style={styles.selectionItemText}>{item.title}</Text>
-                                    <ChevronRight size={20} color="#9CA3AF" />
+                                    <View style={styles.templateInfo}>
+                                        <Text style={styles.selectionItemText}>{item.title}</Text>
+                                        {item.points && <Text style={styles.points}>{item.points} pnt</Text>}
+                                    </View>
+                                    <ChevronRight size={20} color={KribTheme.colors.text.secondary} />
                                 </TouchableOpacity>
                             )}
                             style={{ maxHeight: 400 }}
                             ListEmptyComponent={<Text style={styles.emptyListText}>Geen taken beschikbaar. Voeg eerst sjablonen toe.</Text>}
+                            contentContainerStyle={styles.listContent}
                         />
                     ) : (
                         <FlatList
@@ -56,14 +61,26 @@ export function AssignmentModal({ visible, onClose, templates, members, selected
                                     style={styles.selectionItem}
                                     onPress={() => onAssign(item.user_id)}
                                 >
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <UserIcon size={20} color="#6B7280" style={{ marginRight: 12 }} />
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                        {item.users.profile_picture_url ? (
+                                            <Image
+                                                source={{ uri: item.users.profile_picture_url }}
+                                                style={styles.avatar}
+                                            />
+                                        ) : (
+                                            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                                                <Text style={styles.avatarText}>
+                                                    {item.users.username?.substring(0, 1).toUpperCase()}
+                                                </Text>
+                                            </View>
+                                        )}
                                         <Text style={styles.selectionItemText}>{item.users.username}</Text>
                                     </View>
-                                    <Plus size={20} color="#2563EB" />
+                                    <Plus size={20} color={KribTheme.colors.primary} />
                                 </TouchableOpacity>
                             )}
                             style={{ maxHeight: 400 }}
+                            contentContainerStyle={styles.listContent}
                         />
                     )}
                 </View>
@@ -81,24 +98,29 @@ const styles = StyleSheet.create({
         padding: 16,
     },
     centeredModalContent: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
+        backgroundColor: KribTheme.colors.surface,
+        borderRadius: KribTheme.borderRadius.xl,
         width: '100%',
         maxWidth: 400,
         maxHeight: '80%',
         overflow: 'hidden',
+        ...KribTheme.shadows.floating,
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
+        padding: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
+        borderBottomColor: KribTheme.colors.border,
     },
     modalTitle: {
         fontSize: 18,
         fontWeight: 'bold',
+        color: KribTheme.colors.text.primary,
+    },
+    closeButton: {
+        padding: 4,
     },
     selectionItem: {
         flexDirection: 'row',
@@ -106,16 +128,44 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: KribTheme.colors.background,
+        backgroundColor: KribTheme.colors.surface,
     },
     selectionItemText: {
         fontSize: 16,
-        color: '#111827',
+        color: KribTheme.colors.text.primary,
+        fontWeight: '500',
+    },
+    templateInfo: {
+        gap: 4,
+    },
+    points: {
+        fontSize: 12,
+        color: KribTheme.colors.warning,
+        fontWeight: '600',
     },
     emptyListText: {
-        padding: 16,
+        padding: 20,
         textAlign: 'center',
-        color: '#6B7280',
+        color: KribTheme.colors.text.secondary,
         fontStyle: 'italic',
+    },
+    listContent: {
+        paddingVertical: 8,
+    },
+    avatar: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+    },
+    avatarPlaceholder: {
+        backgroundColor: KribTheme.colors.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatarText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: KribTheme.colors.text.secondary,
     },
 });

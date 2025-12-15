@@ -22,11 +22,13 @@ export default function JoinHousehold() {
         if (!user) return;
 
         // 1. Find Household by code
-        const { data: household, error: houseError } = await supabase
-            .from('households')
-            .select('id, name')
-            .eq('invite_code', inviteCode.toUpperCase())
-            .single();
+        // 1. Find Household by code using secure RPC to bypass RLS
+        // We use an RPC because normal RLS policies usually prevent seeing households you're not a member of.
+        const { data: householdData, error: houseError } = await supabase
+            .rpc('get_household_by_code', { lookup_code: inviteCode });
+
+        // RPC returns an array (table), so we take the first item
+        const household = householdData && Array.isArray(householdData) && householdData.length > 0 ? householdData[0] : null;
 
         if (houseError || !household) {
             Alert.alert('Fout', 'Geen huis gevonden met deze code.');
@@ -69,7 +71,7 @@ export default function JoinHousehold() {
         >
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.container}>
-                    <StatusBar style="dark" />
+                    <StatusBar style="light" />
                     <View style={styles.header}>
                         <Text style={styles.title}>Huis Joinen</Text>
                         <Text style={styles.subtitle}>Voer de code in die je hebt gekregen.</Text>
@@ -96,7 +98,7 @@ export default function JoinHousehold() {
                             disabled={loading}
                         >
                             {loading ? (
-                                <ActivityIndicator color={KribTheme.colors.text.inverse} />
+                                <ActivityIndicator color={KribTheme.colors.primary} />
                             ) : (
                                 <Text style={styles.buttonText}>Join Huis</Text>
                             )}
@@ -115,7 +117,7 @@ export default function JoinHousehold() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB', // Light Background
+        backgroundColor: KribTheme.colors.background,
         padding: 24,
         justifyContent: 'center',
     },
@@ -125,12 +127,13 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#111827', // Dark text
+        color: KribTheme.colors.text.inverse,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280', // Gray text
+        color: KribTheme.colors.text.inverse, // Gray text
+        opacity: 0.9,
     },
     form: {
         gap: 20,
@@ -141,31 +144,27 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#374151', // Dark gray text
+        color: KribTheme.colors.text.inverse,
     },
     input: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.surface,
         borderWidth: 1,
-        borderColor: '#D1D5DB',
+        borderColor: KribTheme.colors.border,
         borderRadius: 12,
         padding: 16,
         fontSize: 16,
-        color: '#111827',
+        color: KribTheme.colors.text.primary,
     },
     button: {
-        backgroundColor: '#F59E0B', // Amber for joining
+        backgroundColor: KribTheme.colors.surface,
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
         marginTop: 8,
-        shadowColor: '#F59E0B',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
+        ...KribTheme.shadows.card,
     },
     buttonText: {
-        color: '#FFFFFF',
+        color: KribTheme.colors.primary,
         fontSize: 16,
         fontWeight: '600',
     },
@@ -174,7 +173,8 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     backButtonText: {
-        color: '#6B7280', // Gray text
+        color: KribTheme.colors.text.inverse,
         fontSize: 16,
+        opacity: 0.8,
     }
 });

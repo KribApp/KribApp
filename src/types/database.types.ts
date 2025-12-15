@@ -124,6 +124,8 @@ export interface Database {
                     user_id: string | null
                     content: string
                     message_type: 'TEXT' | 'SYSTEM_ALERT' | null
+                    attachment_url: string | null
+                    attachment_type: string | null
                     created_at: string
                 }
                 Insert: {
@@ -132,6 +134,8 @@ export interface Database {
                     user_id?: string | null
                     content: string
                     message_type?: 'TEXT' | 'SYSTEM_ALERT' | null
+                    attachment_url?: string | null
+                    attachment_type?: string | null
                     created_at?: string
                 }
                 Update: {
@@ -140,6 +144,31 @@ export interface Database {
                     user_id?: string | null
                     content?: string
                     message_type?: 'TEXT' | 'SYSTEM_ALERT' | null
+                    attachment_url?: string | null
+                    attachment_type?: string | null
+                    created_at?: string
+                }
+            }
+            message_reactions: {
+                Row: {
+                    id: string
+                    message_id: string
+                    user_id: string
+                    reaction: string
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    message_id: string
+                    user_id: string
+                    reaction: string
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    message_id?: string
+                    user_id?: string
+                    reaction?: string
                     created_at?: string
                 }
             }
@@ -148,6 +177,7 @@ export interface Database {
                     id: string
                     household_id: string
                     name: string
+                    category: string | null
                     is_checked: boolean | null
                     is_pinned: boolean | null
                     added_by_user_id: string | null
@@ -158,6 +188,7 @@ export interface Database {
                     id?: string
                     household_id: string
                     name: string
+                    category?: string | null
                     is_checked?: boolean | null
                     is_pinned?: boolean | null
                     added_by_user_id?: string | null
@@ -168,6 +199,7 @@ export interface Database {
                     id?: string
                     household_id?: string
                     name?: string
+                    category?: string | null
                     is_checked?: boolean | null
                     is_pinned?: boolean | null
                     added_by_user_id?: string | null
@@ -239,6 +271,7 @@ export interface Database {
                     due_date: string | null
                     status: 'PENDING' | 'COMPLETED' | 'OVERDUE' | null
                     points: number | null
+                    recurrence_rule: string | null
                     created_at: string
                 }
                 Insert: {
@@ -249,6 +282,7 @@ export interface Database {
                     due_date?: string | null
                     status?: 'PENDING' | 'COMPLETED' | 'OVERDUE' | null
                     points?: number | null
+                    recurrence_rule?: string | null
                     created_at?: string
                 }
                 Update: {
@@ -259,6 +293,7 @@ export interface Database {
                     due_date?: string | null
                     status?: 'PENDING' | 'COMPLETED' | 'OVERDUE' | null
                     points?: number | null
+                    recurrence_rule?: string | null
                     created_at?: string
                 }
             }
@@ -269,6 +304,7 @@ export interface Database {
                     payer_user_id: string | null
                     amount: number
                     description: string
+                    receipt_url: string | null
                     created_at: string
                 }
                 Insert: {
@@ -277,6 +313,7 @@ export interface Database {
                     payer_user_id?: string | null
                     amount: number
                     description: string
+                    receipt_url?: string | null
                     created_at?: string
                 }
                 Update: {
@@ -285,6 +322,7 @@ export interface Database {
                     payer_user_id?: string | null
                     amount?: number
                     description?: string
+                    receipt_url?: string | null
                     created_at?: string
                 }
             }
@@ -355,6 +393,29 @@ export interface Database {
                     item_name?: string
                     count?: number | null
                     updated_at?: string
+                }
+            }
+            grocery_favorites: {
+                Row: {
+                    id: string
+                    household_id: string
+                    name: string
+                    link_url: string | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    household_id: string
+                    name: string
+                    link_url?: string | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    household_id?: string
+                    name?: string
+                    link_url?: string | null
+                    created_at?: string
                 }
             }
         }

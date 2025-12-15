@@ -41,7 +41,14 @@ export default function CustomDrawerContent(props: any) {
                             <Settings size={20} color={KribTheme.colors.primary} />
                         </TouchableOpacity>
                         <View style={styles.avatarContainer}>
-                            <User size={32} color={KribTheme.colors.primary} />
+                            {user?.profile_picture_url ? (
+                                <Image
+                                    source={{ uri: user.profile_picture_url }}
+                                    style={{ width: 80, height: 80, borderRadius: 40 }}
+                                />
+                            ) : (
+                                <User size={32} color={KribTheme.colors.primary} />
+                            )}
                         </View>
                         <View style={{ width: 40 }} />
                     </View>
@@ -82,7 +89,7 @@ export default function CustomDrawerContent(props: any) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: KribTheme.colors.primary, // Full Indigo Background
+        backgroundColor: KribTheme.colors.background, // Full Indigo Background
     },
     header: {
         padding: 24,

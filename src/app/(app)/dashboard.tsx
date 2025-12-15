@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useDashboardData } from '../../hooks/useDashboardData';
@@ -6,6 +6,9 @@ import { KribTheme } from '../../theme/theme';
 import { HouseHeader } from '../../components/dashboard/HouseHeader';
 import { DiningStatusCard } from '../../components/dashboard/DiningStatusCard';
 import { AlertsList } from '../../components/dashboard/AlertsList';
+import { QuickActions } from '../../components/dashboard/QuickActions';
+import { ActivityFeed } from '../../components/dashboard/ActivityFeed';
+import { NoHouseholdState } from '../../components/dashboard/NoHouseholdState';
 
 export default function Dashboard() {
     const {
@@ -15,29 +18,14 @@ export default function Dashboard() {
         alerts,
         eatingCount,
         hasHousehold,
+        activityLogs,
         resolveAlert
     } = useDashboardData();
 
     const router = useRouter();
 
     if (!loading && !hasHousehold) {
-        return (
-            <View style={styles.container}>
-                <StatusBar style="dark" />
-                <View style={styles.emptyState}>
-                    <View style={styles.emptyCard}>
-                        <Text style={styles.emptyTitle}>Geen huis gevonden</Text>
-                        <Text style={styles.emptyText}>Je bent nog geen lid van een huis.</Text>
-                    </View>
-                    <TouchableOpacity
-                        style={styles.createButton}
-                        onPress={() => router.push('/(auth)/create-household')}
-                    >
-                        <Text style={styles.createButtonText}>Huis Aanmaken</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        );
+        return <NoHouseholdState />;
     }
 
     return (
@@ -48,13 +36,26 @@ export default function Dashboard() {
             <HouseHeader photoUrl={photoUrl} householdName={householdName} />
 
             {/* Bottom 2/3: Notifications & Status */}
-            <View style={styles.contentSection}>
-                {/* Dining Status Card */}
-                <DiningStatusCard eatingCount={eatingCount} />
+            <FlatList
+                data={[]}
+                renderItem={null}
+                ListHeaderComponent={
+                    <View style={styles.contentSection}>
+                        {/* Quick Actions */}
+                        <QuickActions />
 
-                {/* Alerts List */}
-                <AlertsList alerts={alerts} loading={loading} onResolve={resolveAlert} />
-            </View>
+                        {/* Dining Status Card */}
+                        <DiningStatusCard eatingCount={eatingCount} />
+
+                        {/* Activity Feed */}
+                        <ActivityFeed activities={activityLogs} loading={loading} />
+
+                        {/* Alerts List */}
+                        <AlertsList alerts={alerts} loading={loading} onResolve={resolveAlert} />
+                    </View>
+                }
+                contentContainerStyle={{ flexGrow: 1 }}
+            />
         </View>
     );
 }
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
         marginTop: -24,
         paddingTop: 24,
         paddingHorizontal: 16,
-        overflow: 'hidden',
+        paddingBottom: 40,
     },
     emptyState: {
         flex: 1,

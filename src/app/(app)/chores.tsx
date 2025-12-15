@@ -10,6 +10,7 @@ import { CalendarView } from '../../components/chores/CalendarView';
 import { DayDetail } from '../../components/chores/DayDetail';
 import { TaskListModal } from '../../components/chores/TaskListModal';
 import { AssignmentModal } from '../../components/chores/AssignmentModal';
+import { MyTodoList } from '../../components/chores/MyTodoList';
 
 export default function Huishouden() {
     const {
@@ -21,8 +22,12 @@ export default function Huishouden() {
         setTemplates,
         members,
         fetchChores,
-        fetchTemplates
+        fetchTemplates,
+        userId
     } = useChoresData();
+
+    // Tabs
+    const [activeTab, setActiveTab] = useState<'MY_TASKS' | 'CALENDAR'>('MY_TASKS');
 
     // Calendar State
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -151,18 +156,71 @@ export default function Huishouden() {
 
     async function toggleChoreStatus(chore: any) {
         const newStatus = chore.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
+        const isCompleting = newStatus === 'COMPLETED';
 
         // Optimistic
         setChores(prev => prev.map(c => c.id === chore.id ? { ...c, status: newStatus } : c));
 
+        const updates: any = { status: newStatus };
+
+        // Handle recurrence if completing
+        if (isCompleting && chore.recurrence_rule && chore.due_date) {
+            handleRecurrence(chore);
+        }
+
         const { error } = await supabase
             .from('chores')
-            .update({ status: newStatus })
+            .update(updates)
             .eq('id', chore.id);
 
         if (error) {
             // Revert
             setChores(prev => prev.map(c => c.id === chore.id ? { ...c, status: chore.status } : c));
+            Alert.alert('Error', 'Kon taak niet updaten.');
+        }
+    }
+
+    async function handleRecurrence(chore: any) {
+        if (!householdId) return;
+
+        let nextDueDate = new Date(chore.due_date);
+
+        switch (chore.recurrence_rule) {
+            case 'DAILY':
+                nextDueDate.setDate(nextDueDate.getDate() + 1);
+                break;
+            case 'WEEKLY':
+                nextDueDate.setDate(nextDueDate.getDate() + 7);
+                break;
+            case 'MONTHLY':
+                nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+                break;
+            default:
+                return; // Unknown rule, do nothing
+        }
+
+        // Create next task
+        // We'll create it assigned to the SAME user, or unassigned? 
+        // For now, let's keep it assigned to same user to keep flow simple.
+        const nextChore = {
+            household_id: householdId,
+            title: chore.title, // Keep same title
+            assigned_to_user_id: chore.assigned_to_user_id,
+            status: 'PENDING',
+            points: chore.points,
+            due_date: nextDueDate.toISOString(),
+            template_id: chore.template_id,
+            recurrence_rule: chore.recurrence_rule
+        };
+
+        const { data, error } = await supabase
+            .from('chores')
+            .insert([nextChore])
+            .select('*, assigned_to:users(username)')
+            .single();
+
+        if (data) {
+            setChores(prev => [...prev, data]);
         }
     }
 
@@ -182,11 +240,11 @@ export default function Huishouden() {
         }
     }
 
-    const canManage = true; // Allow everyone to manage tasks for now
+    const canManage = userRole === 'ADMIN' || userRole === 'CORVEE_PLANNER';
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
             <View style={styles.header}>
                 <DrawerToggleButton tintColor="#FFFFFF" />
                 <Text style={styles.headerTitle}>Huishouden</Text>
@@ -198,23 +256,48 @@ export default function Huishouden() {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.content}>
-                <CalendarView
-                    currentMonth={currentMonth}
-                    selectedDate={selectedDate}
-                    chores={chores}
-                    onMonthChange={changeMonth}
-                    onDateSelect={setSelectedDate}
-                />
-                <DayDetail
-                    selectedDate={selectedDate}
-                    chores={chores}
-                    canManage={canManage}
-                    onAssignTask={() => setShowAssignmentModal(true)}
-                    onToggleStatus={toggleChoreStatus}
-                    onDeleteChore={deleteChore}
-                />
-            </ScrollView>
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'MY_TASKS' && styles.activeTab]}
+                    onPress={() => setActiveTab('MY_TASKS')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'MY_TASKS' && styles.activeTabText]}>Mijn Taken</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'CALENDAR' && styles.activeTab]}
+                    onPress={() => setActiveTab('CALENDAR')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'CALENDAR' && styles.activeTabText]}>Schema</Text>
+                </TouchableOpacity>
+            </View>
+
+            {activeTab === 'MY_TASKS' ? (
+                <View style={styles.content}>
+                    <MyTodoList
+                        chores={chores}
+                        userId={userId}
+                        onToggleStatus={toggleChoreStatus}
+                    />
+                </View>
+            ) : (
+                <ScrollView style={styles.content}>
+                    <CalendarView
+                        currentMonth={currentMonth}
+                        selectedDate={selectedDate}
+                        chores={chores}
+                        onMonthChange={changeMonth}
+                        onDateSelect={setSelectedDate}
+                    />
+                    <DayDetail
+                        selectedDate={selectedDate}
+                        chores={chores}
+                        canManage={canManage}
+                        onAssignTask={() => setShowAssignmentModal(true)}
+                        onToggleStatus={toggleChoreStatus}
+                        onDeleteChore={deleteChore}
+                    />
+                </ScrollView>
+            )}
 
             <TaskListModal
                 visible={showTaskList}
@@ -265,6 +348,36 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        marginBottom: 16,
+        gap: 12,
+    },
+    tab: {
+        flex: 1,
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: KribTheme.colors.surface,
+        borderRadius: KribTheme.borderRadius.m,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    activeTab: {
+        backgroundColor: KribTheme.colors.primary,
+    },
+    tabText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: KribTheme.colors.text.secondary,
+    },
+    activeTabText: {
+        color: KribTheme.colors.text.inverse,
     },
     selectedDateSection: {
         padding: 16,

@@ -159,7 +159,7 @@ export default function TurfOverview() {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}>
                     <Menu size={24} color="#FFFFFF" />
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         textAlign: 'center',
-        color: KribTheme.colors.text.secondary,
+        color: '#FFFFFF',
         fontStyle: 'italic',
         marginTop: 24,
     },

@@ -92,3 +92,52 @@ export type MemberRole = 'ADMIN' | 'MEMBER' | 'FISCUS' | 'CORVEE_PLANNER';
 export type ChoreStatus = 'PENDING' | 'COMPLETED' | 'OVERDUE';
 export type DiningStatus = 'EATING' | 'NOT_EATING' | 'PENDING';
 export type MessageType = 'TEXT' | 'SYSTEM_ALERT';
+
+// ============================================================================
+// New Feature Types
+// ============================================================================
+
+export interface ActivityLog {
+    id: string;
+    household_id: string;
+    user_id: string | null;
+    type: string;
+    content: string;
+    metadata: any;
+    created_at: string;
+}
+
+export interface ActivityLogWithUser extends ActivityLog {
+    users: Pick<UserProfile, 'username' | 'profile_picture_url'> | null;
+}
+
+export interface CalendarEvent {
+    id: string;
+    household_id: string;
+    created_by: string | null;
+    title: string;
+    description: string | null;
+    start_time: string;
+    end_time: string;
+    is_all_day: boolean;
+    location: string | null;
+    color: string;
+    created_at: string;
+}
+
+export interface TurfLog {
+    id: string;
+    ticket_id: string;
+    user_id: string | null;
+    household_id: string;
+    amount_change: number;
+    created_at: string;
+}
+
+export interface MessageReaction {
+    id: string;
+    message_id: string;
+    user_id: string;
+    reaction: string;
+    created_at: string;
+}

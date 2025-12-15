@@ -40,12 +40,7 @@ export default function HouseholdStart() {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={() => {
-                // Temporary logout for testing
-                router.replace('/(auth)/login');
-            }} style={{ marginTop: 40 }}>
-                <Text style={{ color: 'white', opacity: 0.8 }}>Terug naar login</Text>
-            </TouchableOpacity>
+
         </View>
     );
 }

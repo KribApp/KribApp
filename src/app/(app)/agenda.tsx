@@ -17,6 +17,7 @@ export default function Agenda() {
     const [selectedDate, setSelectedDate] = useState('');
     const [attendance, setAttendance] = useState<any[]>([]);
     const [dailyChores, setDailyChores] = useState<any[]>([]);
+    const [events, setEvents] = useState<any[]>([]);
 
     const householdId = household?.id || null;
     const userId = user?.id || null;
@@ -38,11 +39,14 @@ export default function Agenda() {
         if (householdId && selectedDate) {
             fetchAttendance();
             fetchDailyChores();
+            fetchEvents();
             const attendanceSub = subscribeToAttendance();
             const choresSub = subscribeToDailyChores();
+            const eventsSub = subscribeToEvents();
             return () => {
                 attendanceSub.unsubscribe();
                 choresSub.unsubscribe();
+                eventsSub.unsubscribe();
             };
         }
     }, [householdId, selectedDate]);
@@ -143,6 +147,47 @@ export default function Agenda() {
             .subscribe();
     }
 
+    async function fetchEvents() {
+        if (!householdId || !selectedDate) return;
+
+        const startOfDay = new Date(selectedDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Fetch events that overlap with this day
+        const { data, error } = await supabase
+            .from('events')
+            .select('*')
+            .eq('household_id', householdId)
+            .lte('start_time', endOfDay.toISOString())
+            .gte('end_time', startOfDay.toISOString());
+
+        if (data) {
+            setEvents(data);
+        } else {
+            setEvents([]);
+        }
+    }
+
+    function subscribeToEvents() {
+        return supabase
+            .channel('events_agenda')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'events',
+                    filter: `household_id=eq.${householdId}`,
+                },
+                () => {
+                    fetchEvents();
+                }
+            )
+            .subscribe();
+    }
+
     async function setStatus(status: 'EATING' | 'NOT_EATING') {
         if (!householdId || !userId) return;
 
@@ -212,7 +257,7 @@ export default function Agenda() {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
             <View style={styles.header}>
                 <DrawerToggleButton tintColor="#FFFFFF" />
                 <Text style={styles.headerTitle}>Agenda</Text>
@@ -229,6 +274,28 @@ export default function Agenda() {
             <View style={styles.content}>
                 <Text style={styles.sectionTitle}>Planning vandaag</Text>
                 <View style={styles.sectionCard}>
+                    {events.length > 0 && (
+                        <View style={{ marginBottom: 16 }}>
+                            <Text style={styles.subSectionTitle}>Agenda</Text>
+                            {events.map(event => (
+                                <View key={event.id} style={styles.eventItem}>
+                                    <View style={[styles.eventBar, { backgroundColor: event.color || KribTheme.colors.primary }]} />
+                                    <View style={styles.eventContent}>
+                                        <Text style={styles.eventTitle}>{event.title}</Text>
+                                        <Text style={styles.eventTime}>
+                                            {event.is_all_day
+                                                ? 'Hele dag'
+                                                : `${new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(event.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                            }
+                                        </Text>
+                                    </View>
+                                </View>
+                            ))}
+                            <View style={styles.divider} />
+                        </View>
+                    )}
+
+                    <Text style={[styles.subSectionTitle, { marginBottom: 8 }]}>Taken</Text>
                     {dailyChores.length > 0 ? (
                         dailyChores.map(chore => (
                             <View key={chore.id} style={styles.choreItem}>
@@ -262,24 +329,43 @@ export default function Agenda() {
                         const selected = new Date(selectedDate);
                         selected.setHours(0, 0, 0, 0);
                         const isPastDate = selected < today;
+                        const item = attendance.find(a => a.user_id === userId);
 
                         if (!isPastDate) {
                             return (
-                                <View style={styles.actionButtons}>
+                                <View style={styles.segmentedControl}>
                                     <TouchableOpacity
-                                        style={[styles.actionButton, styles.joinButton]}
+                                        style={[
+                                            styles.segment,
+                                            item?.status === 'EATING' && styles.segmentActive,
+                                            item?.status === 'EATING' && { backgroundColor: KribTheme.colors.success + '20' }
+                                        ]}
                                         onPress={() => setStatus('EATING')}
                                     >
-                                        <Check size={20} color={KribTheme.colors.text.inverse} />
-                                        <Text style={styles.buttonText}>Ik eet mee</Text>
+                                        <Check size={18} color={item?.status === 'EATING' ? KribTheme.colors.success : KribTheme.colors.text.secondary} />
+                                        <Text style={[
+                                            styles.segmentText,
+                                            item?.status === 'EATING' && { color: KribTheme.colors.success }
+                                        ]}>
+                                            Ik eet mee
+                                        </Text>
                                     </TouchableOpacity>
-
+                                    <View style={styles.segmentDivider} />
                                     <TouchableOpacity
-                                        style={[styles.actionButton, styles.leaveButton]}
+                                        style={[
+                                            styles.segment,
+                                            item?.status === 'NOT_EATING' && styles.segmentActive,
+                                            item?.status === 'NOT_EATING' && { backgroundColor: KribTheme.colors.error + '20' }
+                                        ]}
                                         onPress={() => setStatus('NOT_EATING')}
                                     >
-                                        <X size={20} color={KribTheme.colors.text.inverse} />
-                                        <Text style={styles.buttonText}>Ik eet niet mee</Text>
+                                        <X size={18} color={item?.status === 'NOT_EATING' ? KribTheme.colors.error : KribTheme.colors.text.secondary} />
+                                        <Text style={[
+                                            styles.segmentText,
+                                            item?.status === 'NOT_EATING' && { color: KribTheme.colors.error }
+                                        ]}>
+                                            Ik eet niet mee
+                                        </Text>
                                     </TouchableOpacity>
                                 </View>
                             );
@@ -366,34 +452,39 @@ const styles = StyleSheet.create({
         color: KribTheme.colors.error,
         fontWeight: '500',
     },
-    actionButtons: {
+    segmentedControl: {
         flexDirection: 'row',
-        gap: 12,
+        backgroundColor: KribTheme.colors.background,
+        borderRadius: KribTheme.borderRadius.m,
+        padding: 4,
         marginBottom: 24,
+        height: 48,
     },
-    actionButton: {
+    segment: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: KribTheme.borderRadius.m,
+        borderRadius: KribTheme.borderRadius.s,
         gap: 8,
     },
-    joinButton: {
-        backgroundColor: KribTheme.colors.success,
+    segmentActive: {
+        backgroundColor: KribTheme.colors.surface,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
     },
-    leaveButton: {
-        backgroundColor: KribTheme.colors.error,
-    },
-    buttonText: {
-        color: KribTheme.colors.text.inverse,
+    segmentText: {
+        fontSize: 14,
         fontWeight: '600',
-        fontSize: 16,
+        color: KribTheme.colors.text.secondary,
     },
-    disabledButton: {
-        opacity: 0.5,
+    segmentDivider: {
+        width: 1,
+        backgroundColor: KribTheme.colors.border,
+        marginVertical: 8,
     },
     memberRow: {
         flexDirection: 'row',
@@ -450,5 +541,43 @@ const styles = StyleSheet.create({
     choreAssignee: {
         fontSize: 12,
         color: KribTheme.colors.text.secondary,
+    },
+    subSectionTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: KribTheme.colors.text.secondary,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 8,
+    },
+    eventItem: {
+        flexDirection: 'row',
+        marginBottom: 8,
+        backgroundColor: KribTheme.colors.background,
+        borderRadius: 8,
+        overflow: 'hidden',
+    },
+    eventBar: {
+        width: 6,
+        backgroundColor: KribTheme.colors.primary,
+    },
+    eventContent: {
+        padding: 8,
+        flex: 1,
+    },
+    eventTitle: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: KribTheme.colors.text.primary,
+        marginBottom: 2,
+    },
+    eventTime: {
+        fontSize: 12,
+        color: KribTheme.colors.text.secondary,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: KribTheme.colors.border,
+        marginVertical: 12,
     },
 });

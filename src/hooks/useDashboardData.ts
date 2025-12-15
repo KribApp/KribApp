@@ -11,6 +11,8 @@ export function useDashboardData() {
     const [alerts, setAlerts] = useState<Notification[]>([]);
     const [eatingCount, setEatingCount] = useState<number | null>(null);
 
+    const [activityLogs, setActivityLogs] = useState<any[]>([]);
+
     const householdId = household?.id || null;
     const householdName = household?.name || 'Laden...';
     const photoUrl = household?.photo_url || null;
@@ -20,6 +22,7 @@ export function useDashboardData() {
             if (householdId) {
                 fetchDiningStatus();
                 fetchAlerts();
+                fetchActivityLogs();
             }
         }, [householdId])
     );
@@ -43,6 +46,27 @@ export function useDashboardData() {
             };
         }
     }, [householdId]);
+
+    async function fetchActivityLogs() {
+        if (!householdId) return;
+
+        const { data, error } = await supabase
+            .from('activity_logs')
+            .select(`
+                *,
+                users (
+                    username,
+                    profile_picture_url
+                )
+            `)
+            .eq('household_id', householdId)
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (data) {
+            setActivityLogs(data);
+        }
+    }
 
     async function fetchAlerts() {
         if (!householdId) return;
@@ -159,6 +183,7 @@ export function useDashboardData() {
         alerts,
         eatingCount,
         hasHousehold: !!householdId,
+        activityLogs,
         resolveAlert
     };
 }

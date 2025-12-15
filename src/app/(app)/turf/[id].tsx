@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, FlatList, Modal, Alert } from 'react-native';
-import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, FlatList, Modal, Alert, TextInput } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../services/supabase';
-import { Plus, Minus, ArrowLeft, UserPlus, X, RotateCcw } from 'lucide-react-native';
+import { Plus, Minus, ArrowLeft, UserPlus, X, RotateCcw, Calculator, Undo2 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { KribTheme } from '../../../theme/theme';
@@ -19,6 +19,14 @@ export default function TurfDetail() {
     const [showMemberModal, setShowMemberModal] = useState(false);
     const [allMembers, setAllMembers] = useState<any[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(false);
+
+    // Custom Amount & Undo
+    const [showCustomModal, setShowCustomModal] = useState(false);
+    const [customAmount, setCustomAmount] = useState('');
+    const [selectedCounter, setSelectedCounter] = useState<any>(null);
+    const [undoStack, setUndoStack] = useState<{ id: string, delta: number, timestamp: number, counterId: string }[]>([]);
+    const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [showUndo, setShowUndo] = useState(false);
 
     useEffect(() => {
         fetchHouseholdAndUser();
@@ -140,11 +148,22 @@ export default function TurfDetail() {
     }
 
     async function updateCounter(counter: any, delta: number) {
+        // Removed negative check to allow negative balances
         const newCount = (counter.count || 0) + delta;
-        if (newCount < 0) return;
 
         // Optimistic update
         setCounters(prev => prev.map(c => c.id === counter.id ? { ...c, count: newCount } : c));
+
+        // Add to Undo Stack
+        const action = { id: Date.now().toString(), delta, timestamp: Date.now(), counterId: counter.id };
+        setUndoStack(prev => [action, ...prev].slice(0, 1)); // Keep only last action for simple 1-step undo
+        setShowUndo(true);
+
+        // Auto-hide undo after 5 seconds
+        if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+        undoTimeoutRef.current = setTimeout(() => {
+            setShowUndo(false);
+        }, 5000);
 
         const { error } = await supabase
             .from('turf_counters')
@@ -155,6 +174,68 @@ export default function TurfDetail() {
             // Revert
             setCounters(prev => prev.map(c => c.id === counter.id ? { ...c, count: counter.count } : c));
         }
+    }
+
+    async function handleUndo() {
+        if (undoStack.length === 0) return;
+        const action = undoStack[0];
+        const counter = counters.find(c => c.id === action.counterId);
+
+        if (counter) {
+            // Reverse the delta
+            await updateCounter(counter, -action.delta); // This will add a new "undo" action to stack, ideally we pop it but for simplicity we just reverse action
+            // Optimization: Remove the "undo" action we just triggered from stack to prevent loop? 
+            // Actually, calling updateCounter will overwrite the stack with the undo action. 
+            // To make it cleaner, we should probably separate the DB update from the UI trigger or manage stack manually.
+            // Let's manually do the reversal and clear stack.
+        }
+        setShowUndo(false);
+        setUndoStack([]);
+    }
+
+    // Fix: Redefine handleUndo to avoid loop
+    async function executeUndo() {
+        if (undoStack.length === 0) return;
+        const action = undoStack[0];
+        const counter = counters.find(c => c.id === action.counterId);
+
+        if (counter) {
+            const newCount = (counter.count || 0) - action.delta;
+
+            // Optimistic
+            setCounters(prev => prev.map(c => c.id === counter.id ? { ...c, count: newCount } : c));
+            setShowUndo(false);
+            setUndoStack([]);
+
+            const { error } = await supabase
+                .from('turf_counters')
+                .update({ count: newCount, updated_at: new Date().toISOString() })
+                .eq('id', counter.id);
+
+            if (error) {
+                // Revert if error
+                setCounters(prev => prev.map(c => c.id === counter.id ? { ...c, count: counter.count } : c));
+            }
+        }
+    }
+
+    function openCustomModal(counter: any) {
+        setSelectedCounter(counter);
+        setCustomAmount('');
+        setShowCustomModal(true);
+    }
+
+    async function handleCustomAmountSubmit() {
+        if (!selectedCounter || !customAmount) return;
+        const amount = parseInt(customAmount);
+        if (isNaN(amount)) {
+            Alert.alert('Error', 'Voer een geldig getal in.');
+            return;
+        }
+
+        // Add the amount (not replace)
+        await updateCounter(selectedCounter, amount);
+        setShowCustomModal(false);
     }
 
     async function resetCounter(counter: any) {
@@ -197,7 +278,13 @@ export default function TurfDetail() {
                 <TouchableOpacity onPress={() => updateCounter(item, 1)} style={styles.controlButton}>
                     <Plus size={20} color={KribTheme.colors.primary} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => resetCounter(item)} style={[styles.controlButton, { marginLeft: 8 }]}>
+
+                {/* Custom Amount Button */}
+                <TouchableOpacity onPress={() => openCustomModal(item)} style={[styles.controlButton, { marginLeft: 8 }]}>
+                    <Calculator size={18} color={KribTheme.colors.primary} />
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => resetCounter(item)} style={[styles.controlButton, { marginLeft: 4 }]}>
                     <RotateCcw size={18} color={KribTheme.colors.primary} />
                 </TouchableOpacity>
             </View>
@@ -223,7 +310,7 @@ export default function TurfDetail() {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <ArrowLeft size={24} color="#FFFFFF" />
@@ -253,6 +340,17 @@ export default function TurfDetail() {
                 />
             )}
 
+            {/* Undo Snackbar */}
+            {showUndo && (
+                <View style={styles.undoContainer}>
+                    <Text style={styles.undoText}>Actie uitgevoerd</Text>
+                    <TouchableOpacity onPress={executeUndo} style={styles.undoButton}>
+                        <Undo2 size={18} color="#FFFFFF" />
+                        <Text style={styles.undoButtonText}>Ongedaan maken</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
             <Modal
                 visible={showMemberModal}
                 animationType="slide"
@@ -276,6 +374,39 @@ export default function TurfDetail() {
                             contentContainerStyle={styles.modalList}
                         />
                     )}
+                </View>
+            </Modal>
+
+            <Modal
+                visible={showCustomModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowCustomModal(false)}
+            >
+                <View style={styles.customModalOverlay}>
+                    <View style={styles.customModalContent}>
+                        <Text style={styles.customModalTitle}>Aantal toevoegen</Text>
+                        <Text style={styles.customModalSubtitle}>Huidig: {selectedCounter?.count}</Text>
+
+                        <TextInput
+                            style={styles.customInput}
+                            value={customAmount}
+                            onChangeText={setCustomAmount}
+                            placeholder="Bijv. 12 (of -5)"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numbers-and-punctuation"
+                            autoFocus
+                        />
+
+                        <View style={styles.customModalActions}>
+                            <TouchableOpacity style={styles.customCancelButton} onPress={() => setShowCustomModal(false)}>
+                                <Text style={styles.customCancelText}>Annuleren</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.customConfirmButton} onPress={handleCustomAmountSubmit}>
+                                <Text style={styles.customConfirmText}>Toevoegen</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
             </Modal>
         </View>
@@ -315,7 +446,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.surface,
         padding: 16,
         borderRadius: 12,
         shadowColor: '#000',
@@ -434,5 +565,100 @@ const styles = StyleSheet.create({
     },
     removeButtonText: {
         color: KribTheme.colors.error,
+    },
+    // Undo Styles
+    undoContainer: {
+        position: 'absolute',
+        bottom: 40,
+        left: 16,
+        right: 16,
+        backgroundColor: '#1F2937',
+        borderRadius: 8,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    undoText: {
+        color: '#FFFFFF',
+        fontWeight: '500',
+    },
+    undoButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    undoButtonText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+    },
+    // Custom Modal Styles
+    customModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    customModalContent: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 24,
+        width: '100%',
+        maxWidth: 320,
+        ...KribTheme.shadows.card,
+    },
+    customModalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    customModalSubtitle: {
+        fontSize: 14,
+        color: '#6B7280',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    customInput: {
+        backgroundColor: '#F3F4F6',
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 24,
+        color: '#000000',
+    },
+    customModalActions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    customCancelButton: {
+        flex: 1,
+        padding: 12,
+        borderRadius: 8,
+        backgroundColor: '#F3F4F6',
+        alignItems: 'center',
+    },
+    customCancelText: {
+        color: '#374151',
+        fontWeight: '600',
+    },
+    customConfirmButton: {
+        flex: 1,
+        padding: 12,
+        borderRadius: 8,
+        backgroundColor: KribTheme.colors.primary,
+        alignItems: 'center',
+    },
+    customConfirmText: {
+        color: '#FFFFFF',
+        fontWeight: '600',
     },
 });

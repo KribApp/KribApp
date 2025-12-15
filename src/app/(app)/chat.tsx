@@ -1,20 +1,29 @@
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
-import { Menu, Send } from 'lucide-react-native';
+import { Menu, Send, User, Paperclip, Heart } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../services/supabase';
 import { DrawerToggleButton } from '@react-navigation/drawer';
 import { KribTheme } from '../../theme/theme';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import { decode } from 'base64-arraybuffer';
+import { ImageViewerModal } from '../../components/ImageViewerModal';
 
 export default function Chat() {
     const navigation = useNavigation();
     const [householdId, setHouseholdId] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
+    const [currentUserProfile, setCurrentUserProfile] = useState<{ username: string, profile_picture_url: string | null } | null>(null);
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
+    const [typingUsers, setTypingUsers] = useState<string[]>([]);
+    const [viewingImage, setViewingImage] = useState<string | null>(null);
     const flatListRef = useRef<FlatList>(null);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         fetchHouseholdAndUser();
@@ -22,39 +31,20 @@ export default function Chat() {
 
     useEffect(() => {
         if (householdId) {
+            console.log('Fetching messages for household:', householdId);
             fetchMessages();
-            const subscription = subscribeToMessages();
+            const messageSub = subscribeToMessages();
+            const reactionSub = subscribeToReactions();
+            const presenceSub = subscribeToPresenseAndTyping();
             return () => {
-                subscription.unsubscribe();
+                messageSub.unsubscribe();
+                reactionSub.unsubscribe();
+                presenceSub.unsubscribe();
             };
         }
     }, [householdId]);
 
-    async function fetchHouseholdAndUser() {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                setLoading(false);
-                return;
-            }
-            setUserId(user.id);
-
-            const { data: member } = await supabase
-                .from('household_members')
-                .select('household_id')
-                .eq('user_id', user.id)
-                .single();
-
-            if (member) {
-                setHouseholdId(member.household_id);
-            } else {
-                setLoading(false);
-            }
-        } catch (error) {
-            console.error('Error fetching household:', error);
-            setLoading(false);
-        }
-    }
+    // ... fetchHouseholdAndUser remains the same ...
 
     async function fetchMessages() {
         if (!householdId) {
@@ -65,7 +55,15 @@ export default function Chat() {
         try {
             const { data, error } = await supabase
                 .from('chat_messages')
-                .select('*, users(username)')
+                .select(`
+                    *,
+                    users (username, profile_picture_url),
+                    message_reactions (
+                        id,
+                        reaction,
+                        user_id
+                    )
+                `)
                 .eq('household_id', householdId)
                 .order('created_at', { ascending: true });
 
@@ -84,7 +82,7 @@ export default function Chat() {
 
     function subscribeToMessages() {
         return supabase
-            .channel('chat_messages')
+            .channel('chat_messages_channel')
             .on(
                 'postgres_changes',
                 {
@@ -97,17 +95,17 @@ export default function Chat() {
                     // Fetch user details for the new message
                     const { data: user } = await supabase
                         .from('users')
-                        .select('username')
+                        .select('username, profile_picture_url')
                         .eq('id', payload.new.user_id)
                         .single();
 
                     const newMessage: any = {
                         ...payload.new,
                         users: user,
+                        message_reactions: [] // Init empty reactions
                     };
 
                     setMessages((prev) => {
-                        // Prevent duplicates (e.g. from optimistic update)
                         if (prev.some(m => m.id === newMessage.id)) {
                             return prev;
                         }
@@ -119,11 +117,224 @@ export default function Chat() {
             .subscribe();
     }
 
-    async function sendMessage() {
-        if (!message.trim() || !householdId || !userId) return;
+    function subscribeToReactions() {
+        return supabase
+            .channel('message_reactions_channel')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'message_reactions' },
+                async (payload) => {
+                    // ... existing reaction logic ...
+                    if (payload.eventType === 'INSERT') {
+                        const newReaction = payload.new;
+                        setMessages(prev => prev.map(msg => {
+                            if (msg.id === newReaction.message_id) {
+                                return {
+                                    ...msg,
+                                    message_reactions: [...(msg.message_reactions || []), newReaction]
+                                };
+                            }
+                            return msg;
+                        }));
+                    } else if (payload.eventType === 'DELETE') {
+                        const deletedReaction = payload.old;
+                        setMessages(prev => prev.map(msg => {
+                            if (msg.id === deletedReaction.message_id) {
+                                return {
+                                    ...msg,
+                                    message_reactions: (msg.message_reactions || []).filter((r: any) => r.id !== deletedReaction.id)
+                                };
+                            }
+                            return msg;
+                        }));
+                    }
+                }
+            )
+            .subscribe();
+    }
 
-        const content = message.trim();
-        setMessage('');
+    function subscribeToPresenseAndTyping() {
+        const channel = supabase.channel(`room_${householdId}`)
+            .on('broadcast', { event: 'typing' }, (payload) => {
+                if (payload.payload.user_id !== userId) {
+                    setTypingUsers(prev => {
+                        if (!prev.includes(payload.payload.username)) {
+                            return [...prev, payload.payload.username];
+                        }
+                        return prev;
+                    });
+
+                    // Clear after 3 seconds if no new event
+                    // Ideally we'd have a timeout per user, but for simplicity:
+                    setTimeout(() => {
+                        setTypingUsers(prev => prev.filter(u => u !== payload.payload.username));
+                    }, 3000);
+                }
+            })
+            .subscribe();
+
+        return channel;
+    }
+
+    async function broadcastTyping() {
+        if (!householdId || !userId || !currentUserProfile) return;
+
+        await supabase.channel(`room_${householdId}`).send({
+            type: 'broadcast',
+            event: 'typing',
+            payload: { user_id: userId, username: currentUserProfile.username },
+        });
+    }
+
+    const handleTextChange = (text: string) => {
+        setMessage(text);
+
+        // Debounce typing broadcast
+        if (!typingTimeoutRef.current) {
+            broadcastTyping();
+            typingTimeoutRef.current = setTimeout(() => {
+                typingTimeoutRef.current = null;
+            }, 2000); // Only send every 2s
+        }
+    };
+
+
+    async function pickImage() {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: false,
+                quality: 0.7,
+                base64: true,
+            });
+
+            if (!result.canceled && result.assets[0].base64) {
+                await uploadAndSendMessage(result.assets[0]);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Kon afbeelding niet openen.');
+            console.error(error);
+        }
+    }
+
+    async function uploadAndSendMessage(asset: ImagePicker.ImagePickerAsset) {
+        if (!householdId || !userId || !asset.base64) return;
+        setUploading(true);
+
+        const fileName = `${householdId}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+
+        try {
+            const { data, error } = await supabase.storage
+                .from('chat-attachments')
+                .upload(fileName, decode(asset.base64), {
+                    contentType: 'image/jpeg',
+                });
+
+            if (error) {
+                // Try to create bucket if it doesn't exist (hacky, better done in SQL or dashboard)
+                // Just throw for now if fails
+                throw error;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('chat-attachments')
+                .getPublicUrl(fileName);
+
+            await sendMessage(undefined, publicUrl, 'image');
+
+        } catch (error: any) {
+            console.error('Upload error:', error);
+            Alert.alert('Upload mislukt', 'Kon afbeelding niet uploaden: ' + error.message);
+        } finally {
+            setUploading(false);
+        }
+    }
+
+    const lastTap = useRef<number>(0);
+    const handleDoubleTap = async (messageId: string) => {
+        const now = Date.now();
+        const DOUBLE_TAP_DELAY = 300;
+        if (lastTap.current && (now - lastTap.current) < DOUBLE_TAP_DELAY) {
+            toggleReaction(messageId, '❤️');
+        } else {
+            lastTap.current = now;
+        }
+    };
+
+    async function toggleReaction(messageId: string, reaction: string) {
+        if (!userId) return;
+
+        const message = messages.find(m => m.id === messageId);
+        if (!message) return;
+
+        const existingReaction = message.message_reactions?.find(
+            (r: any) => r.user_id === userId && r.reaction === reaction
+        );
+
+        if (existingReaction) {
+            // Remove
+            const { error } = await supabase
+                .from('message_reactions')
+                .delete()
+                .eq('id', existingReaction.id);
+
+            if (error) console.error(error);
+        } else {
+            // Add
+            const { error } = await supabase
+                .from('message_reactions')
+                .insert({
+                    message_id: messageId,
+                    user_id: userId,
+                    reaction
+                });
+
+            if (error) console.error(error);
+        }
+    }
+
+    async function fetchHouseholdAndUser() {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+            setUserId(user.id);
+
+            // Fetch current user profile
+            const { data: profile } = await supabase
+                .from('users')
+                .select('username, profile_picture_url')
+                .eq('id', user.id)
+                .single();
+
+            if (profile) {
+                setCurrentUserProfile(profile);
+            }
+
+            const { data: member } = await supabase
+                .from('household_members')
+                .select('household_id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (member) {
+                setHouseholdId(member.household_id);
+            } else {
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error('Error fetching household:', error);
+            setLoading(false);
+        }
+    }
+
+    async function sendMessage(text?: string, attachmentUrl?: string, attachmentType?: string) {
+        if ((!text?.trim() && !attachmentUrl) || !householdId || !userId) return;
+
+        const content = text?.trim() || (attachmentType === 'image' ? 'Afbeelding verzonden' : '');
+        if (text) setMessage('');
 
         // Generate a temporary ID (UUID v4 format)
         const tempId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -137,8 +348,14 @@ export default function Chat() {
             user_id: userId,
             content,
             message_type: 'TEXT',
+            attachment_url: attachmentUrl,
+            attachment_type: attachmentType,
             created_at: new Date().toISOString(),
-            users: { username: 'Ik' } // Placeholder
+            users: {
+                username: currentUserProfile?.username || 'Ik',
+                profile_picture_url: currentUserProfile?.profile_picture_url
+            },
+            message_reactions: []
         };
 
         // Optimistically add message
@@ -154,6 +371,8 @@ export default function Chat() {
                     user_id: userId,
                     content,
                     message_type: 'TEXT',
+                    attachment_url: attachmentUrl,
+                    attachment_type: attachmentType,
                 }
             ]);
 
@@ -207,6 +426,15 @@ export default function Chat() {
             );
         }
 
+        const profileUrl = item.users?.profile_picture_url;
+        const displayName = isOwnMessage
+            ? `${item.users?.username || 'Ik'} (me)`
+            : item.users?.username || 'Onbekend';
+
+        const reactions = item.message_reactions || [];
+        const heartCount = reactions.filter((r: any) => r.reaction === '❤️').length;
+        const hasReacted = reactions.some((r: any) => r.user_id === userId && r.reaction === '❤️');
+
         return (
             <View>
                 {showDateDivider && (
@@ -215,16 +443,69 @@ export default function Chat() {
                     </View>
                 )}
                 <View style={[
-                    styles.messageContainer,
-                    isOwnMessage ? styles.ownMessage : styles.otherMessage
+                    styles.messageRow,
+                    isOwnMessage ? styles.ownMessageRow : styles.otherMessageRow
                 ]}>
-                    {!isOwnMessage && (
-                        <Text style={styles.senderName}>{item.users?.username || 'Onbekend'}</Text>
-                    )}
-                    <Text style={[
-                        styles.messageText,
-                        isOwnMessage ? styles.ownMessageText : styles.otherMessageText
-                    ]}>{item.content}</Text>
+                    <View style={styles.avatarContainer}>
+                        {profileUrl ? (
+                            <Image
+                                source={{ uri: profileUrl }}
+                                style={styles.avatarImage}
+                                contentFit="cover"
+                            />
+                        ) : (
+                            <View style={[styles.avatarPlaceholder, { backgroundColor: isOwnMessage ? KribTheme.colors.primary : '#9CA3AF' }]}>
+                                <User size={16} color="#FFFFFF" />
+                            </View>
+                        )}
+                    </View>
+
+                    <View style={[
+                        styles.messageContentWrapper,
+                        isOwnMessage ? styles.ownMessageContentWrapper : styles.otherMessageContentWrapper
+                    ]}>
+                        <Text style={[styles.senderName, isOwnMessage && { textAlign: 'right' }]}>{displayName}</Text>
+
+                        <TouchableOpacity
+                            onPress={() => {
+                                if (item.attachment_type === 'image' && item.attachment_url) {
+                                    setViewingImage(item.attachment_url);
+                                } else {
+                                    handleDoubleTap(item.id);
+                                }
+                            }}
+                            activeOpacity={0.9}
+                            style={[
+                                styles.messageContainer,
+                                isOwnMessage ? styles.ownMessage : styles.otherMessage,
+                                item.attachment_type === 'image' && styles.imageMessageContainer
+                            ]}
+                        >
+                            {item.attachment_type === 'image' && item.attachment_url ? (
+                                <Image
+                                    source={{ uri: item.attachment_url }}
+                                    style={styles.attachmentImage}
+                                    contentFit="cover"
+                                />
+                            ) : null}
+
+                            {item.content && item.content !== 'Afbeelding verzonden' ? (
+                                <Text style={[
+                                    styles.messageText,
+                                    isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
+                                    item.attachment_type === 'image' && { marginTop: 8 }
+                                ]}>{item.content}</Text>
+                            ) : null}
+
+                            {/* Reactions */}
+                            {heartCount > 0 && (
+                                <View style={styles.reactionBadge}>
+                                    <Heart size={10} color="#FFFFFF" fill="#FFFFFF" />
+                                    {heartCount > 1 && <Text style={styles.reactionCount}>{heartCount}</Text>}
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         );
@@ -232,7 +513,7 @@ export default function Chat() {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
             <View style={styles.header}>
                 <DrawerToggleButton tintColor="#FFFFFF" />
                 <Text style={styles.headerTitle}>Chat</Text>
@@ -259,25 +540,56 @@ export default function Chat() {
                 )}
             </View>
 
+            {typingUsers.length > 0 && (
+                <View style={styles.typingIndicator}>
+                    <Text style={styles.typingText}>
+                        {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'zijn'} aan het typen...
+                    </Text>
+                </View>
+            )}
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                keyboardVerticalOffset={0}
+                style={{ backgroundColor: KribTheme.colors.surface }}
             >
                 <View style={styles.inputContainer}>
+                    <TouchableOpacity
+                        style={styles.attachButton}
+                        onPress={pickImage}
+                        disabled={uploading}
+                    >
+                        {uploading ? (
+                            <ActivityIndicator size="small" color={KribTheme.colors.text.secondary} />
+                        ) : (
+                            <Paperclip size={24} color={KribTheme.colors.text.secondary} />
+                        )}
+                    </TouchableOpacity>
+
                     <TextInput
                         style={styles.input}
                         value={message}
-                        onChangeText={setMessage}
+                        onChangeText={handleTextChange}
                         placeholder="Typ een bericht..."
                         placeholderTextColor="#9CA3AF"
                         returnKeyType="send"
-                        onSubmitEditing={sendMessage}
+                        onSubmitEditing={() => sendMessage(message)}
                     />
-                    <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+                    <TouchableOpacity
+                        style={[styles.sendButton, (!message.trim() && !uploading) && styles.sendButtonDisabled]}
+                        onPress={() => sendMessage(message)}
+                        disabled={!message.trim() || uploading}
+                    >
                         <Send size={20} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
+
+            <ImageViewerModal
+                visible={!!viewingImage}
+                imageUrl={viewingImage}
+                onClose={() => setViewingImage(null)}
+            />
         </View>
     );
 }
@@ -306,7 +618,8 @@ const styles = StyleSheet.create({
         backgroundColor: KribTheme.colors.background,
     },
     chatContent: {
-        padding: 16,
+        paddingHorizontal: 4, // Reduced to move avatars closer to edge
+        paddingTop: 16,
         paddingBottom: 20,
     },
     emptyChat: {
@@ -322,8 +635,10 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         marginBottom: 8,
         maxWidth: '80%',
-        ...KribTheme.shadows.card,
-        shadowOpacity: 0.05, // Lighter shadow for messages
+        overflow: 'hidden', // Added to clip image corners
+    },
+    imageMessageContainer: {
+        padding: 0, // Remove padding for images
     },
     ownMessage: {
         backgroundColor: '#FFFFFF',
@@ -337,7 +652,7 @@ const styles = StyleSheet.create({
     },
     senderName: {
         fontSize: 12,
-        color: '#000000',
+        color: '#FFFFFF',
         fontWeight: 'bold',
         marginBottom: 4,
     },
@@ -404,5 +719,83 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: 12,
         overflow: 'hidden',
+    },
+    messageRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        marginBottom: 8,
+        maxWidth: '80%',
+    },
+    ownMessageRow: {
+        alignSelf: 'flex-end',
+        flexDirection: 'row-reverse',
+    },
+    otherMessageRow: {
+        alignSelf: 'flex-start',
+    },
+    avatarContainer: {
+        marginHorizontal: 8,
+        marginBottom: 4,
+    },
+    avatarImage: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+    },
+    avatarPlaceholder: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    messageContentWrapper: {
+        flex: 1,
+    },
+    ownMessageContentWrapper: {
+        alignItems: 'flex-end',
+    },
+    otherMessageContentWrapper: {
+        alignItems: 'flex-start',
+    },
+    attachmentImage: {
+        width: 240,
+        height: 180,
+    },
+    reactionBadge: {
+        position: 'absolute',
+        bottom: -10,
+        right: -5,
+        backgroundColor: KribTheme.colors.secondary,
+        borderRadius: 10,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#FFFFFF',
+    },
+    reactionCount: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: 'bold',
+        marginLeft: 2,
+    },
+    attachButton: {
+        padding: 8,
+        marginRight: 8,
+    },
+    sendButtonDisabled: {
+        backgroundColor: KribTheme.colors.background, // or gray
+        opacity: 0.5,
+    },
+    typingIndicator: {
+        paddingHorizontal: 16,
+        paddingBottom: 8,
+    },
+    typingText: {
+        fontSize: 12,
+        color: '#FFFFFF',
+        fontStyle: 'italic',
     },
 });

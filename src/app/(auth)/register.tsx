@@ -58,7 +58,7 @@ export default function Register() {
                 emailRedirectTo: redirectUrl,
                 data: {
                     username,
-                    birthdate: birthdate.toISOString().split('T')[0],
+                    birthdate: `${birthdate.getFullYear()}-${String(birthdate.getMonth() + 1).padStart(2, '0')}-${String(birthdate.getDate()).padStart(2, '0')}`,
                 },
             },
         });

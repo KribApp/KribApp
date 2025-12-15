@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { KribTheme } from '../../theme/theme';
 import { useRouter, useNavigation } from 'expo-router';
 import { DrawerActions } from '@react-navigation/native';
-
+import { Image } from 'expo-image';
 export default function HouseInfo() {
     const router = useRouter();
     const navigation = useNavigation();
@@ -142,7 +142,7 @@ export default function HouseInfo() {
         if (!householdId) return;
         const { data } = await supabase
             .from('household_members')
-            .select('*, users(username, email)')
+            .select('*, users(username, email, profile_picture_url)')
             .eq('household_id', householdId);
 
         if (data) {
@@ -250,14 +250,14 @@ export default function HouseInfo() {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}>
-                    <Menu size={24} color="#5D5FEF" />
+                    <Menu size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Huis Info</Text>
                 <TouchableOpacity onPress={() => router.push('/(app)/house-settings')}>
-                    <Settings size={24} color="#5D5FEF" />
+                    <Settings size={24} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
@@ -327,7 +327,15 @@ export default function HouseInfo() {
                                 <TouchableOpacity key={member.id} style={styles.memberCard} onPress={() => handleMemberPress(member)}>
                                     <View style={styles.memberInfo}>
                                         <View style={styles.avatarPlaceholder}>
-                                            <User size={20} color="#6B7280" />
+                                            {member.users?.profile_picture_url ? (
+                                                <Image
+                                                    source={{ uri: member.users.profile_picture_url }}
+                                                    style={{ width: 40, height: 40, borderRadius: 20 }}
+                                                    contentFit="cover"
+                                                />
+                                            ) : (
+                                                <User size={20} color="#6B7280" />
+                                            )}
                                         </View>
                                         <View>
                                             <Text style={styles.memberName}>{member.users?.username || 'Onbekend'}</Text>
@@ -353,7 +361,7 @@ export default function HouseInfo() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.background,
     },
     header: {
         flexDirection: 'row',
@@ -362,12 +370,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 60,
         paddingBottom: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.background,
     },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#5D5FEF',
+        color: '#FFFFFF',
     },
     content: {
         padding: 16,
@@ -375,18 +383,17 @@ const styles = StyleSheet.create({
     addressCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.surface,
         padding: 16,
         borderRadius: KribTheme.borderRadius.l,
         marginBottom: 24,
-        borderWidth: 1,
-        borderColor: '#5D5FEF',
+        borderWidth: 0,
         ...KribTheme.shadows.card,
     },
     addressText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#5D5FEF',
+        color: KribTheme.colors.text.primary,
         marginBottom: 2,
     },
     addressSubText: {
@@ -408,7 +415,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#5D5FEF',
+        color: '#FFFFFF',
         textAlign: 'left',
     },
     saveButton: {
@@ -420,13 +427,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     infoCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.surface,
         padding: 16,
         borderRadius: KribTheme.borderRadius.l,
         minHeight: 120,
         marginBottom: 24,
-        borderWidth: 1,
-        borderColor: '#5D5FEF',
+        borderWidth: 0,
         ...KribTheme.shadows.card,
     },
     infoInput: {
@@ -441,12 +447,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.surface,
         padding: 16,
         borderRadius: KribTheme.borderRadius.l,
         marginBottom: 12,
-        borderWidth: 1,
-        borderColor: '#5D5FEF',
+        borderWidth: 0,
         ...KribTheme.shadows.card,
     },
     memberInfo: {
@@ -465,7 +470,7 @@ const styles = StyleSheet.create({
     memberName: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#5D5FEF',
+        color: KribTheme.colors.text.primary,
     },
     memberEmail: {
         fontSize: 12,

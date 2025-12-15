@@ -64,7 +64,7 @@ export default function FinancesList() {
         try {
             const { data, error } = await supabase
                 .from('expense_lists')
-                .select('*')
+                .select('*, expenses(amount)')
                 .eq('household_id', householdId)
                 .order('created_at', { ascending: false });
 
@@ -129,7 +129,9 @@ export default function FinancesList() {
             </View>
             <View style={styles.listInfo}>
                 <Text style={styles.listName}>{item.name}</Text>
-                <Text style={styles.listMeta}>Tik om te openen</Text>
+                <Text style={styles.listMeta}>
+                    {item.expenses?.length || 0} uitgaven • Totaal: €{item.expenses?.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0).toFixed(2)}
+                </Text>
             </View>
             <ChevronRight size={20} color={KribTheme.colors.text.secondary} />
         </TouchableOpacity>
@@ -137,7 +139,7 @@ export default function FinancesList() {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style="light" />
             <View style={styles.header}>
                 <DrawerToggleButton tintColor="#FFFFFF" />
                 <Text style={styles.headerTitle}>Mijn Lijstjes</Text>
@@ -264,7 +266,7 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         textAlign: 'center',
-        color: KribTheme.colors.text.secondary,
+        color: '#FFFFFF',
         fontStyle: 'italic',
         marginTop: 24,
     },
@@ -280,7 +282,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         fontSize: 16,
-        color: KribTheme.colors.text.primary,
+        color: '#FFFFFF',
     },
     addButton: {
         backgroundColor: '#FFFFFF',
@@ -336,7 +338,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cancelButtonText: {
-        color: KribTheme.colors.text.secondary,
+        color: '#FFFFFF',
         fontWeight: '600',
         fontSize: 16,
     },

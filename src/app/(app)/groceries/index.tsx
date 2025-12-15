@@ -19,11 +19,34 @@ export default function Groceries() {
     const [householdId, setHouseholdId] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [favorites, setFavorites] = useState<any[]>([]);
 
     // Fetch household and user on mount
     useEffect(() => {
         fetchHouseholdAndUser();
     }, []);
+
+    // Fetch favorites for suggestions
+    useEffect(() => {
+        if (householdId) {
+            fetchFavorites();
+        }
+    }, [householdId]);
+
+    async function fetchFavorites() {
+        const { data } = await supabase
+            .from('grocery_favorites')
+            .select('*')
+            .eq('household_id', householdId);
+        if (data) setFavorites(data);
+    }
+
+    const filteredSuggestions = useMemo(() => {
+        if (!newItemName.trim()) return [];
+        const lower = newItemName.toLowerCase();
+        return favorites.filter(fav => fav.name.toLowerCase().includes(lower));
+    }, [newItemName, favorites]);
 
     // Fetch/subscribe to items when householdId changes
     useFocusEffect(
@@ -271,6 +294,46 @@ export default function Groceries() {
         }
     }, [householdId, userId]);
 
+    const clearCompleted = useCallback(async () => {
+        // Filter checked items that are NOT pinned
+        const itemsToDelete = items.filter(i => i.is_checked && !i.is_pinned);
+
+        if (itemsToDelete.length === 0) {
+            if (items.some(i => i.is_checked && i.is_pinned)) {
+                Alert.alert('Info', 'Alleen vastgepinde items zijn afgevinkt. Deze worden niet verwijderd.');
+            }
+            return;
+        }
+
+        Alert.alert(
+            Strings.groceries.clearCompletedTitle || 'Gereed verwijderen',
+            Strings.groceries.clearCompletedConfirm || 'Weet je zeker dat je alle afgevinkte items wilt verwijderen? (Vastgepinde items blijven staan)',
+            [
+                { text: Strings.common.cancel, style: 'cancel' },
+                {
+                    text: 'Verwijderen',
+                    style: 'destructive',
+                    onPress: async () => {
+                        // Optimistic update
+                        setItems(prev => prev.filter(i => !itemsToDelete.some(del => del.id === i.id)));
+
+                        const itemIds = itemsToDelete.map(i => i.id);
+                        const { error } = await supabase
+                            .from('shopping_items')
+                            .delete()
+                            .in('id', itemIds);
+
+                        if (error) {
+                            console.error('Clear completed error:', error);
+                            Alert.alert(Strings.common.error, Strings.groceries.deleteError);
+                            fetchItems(); // Reload
+                        }
+                    }
+                }
+            ]
+        );
+    }, [items, fetchItems]);
+
     const onDragEnd = useCallback(async ({ data }: { data: ShoppingItem[] }) => {
         // 'data' here is ONLY the unpinned items in their new order
         // We need to fetch the pinned items to reconstruct the full list state
@@ -326,9 +389,14 @@ export default function Groceries() {
             <View style={styles.header}>
                 <DrawerToggleButton tintColor="#FFFFFF" />
                 <Text style={styles.headerTitle}>{Strings.groceries.title}</Text>
-                <TouchableOpacity onPress={() => router.push('/(app)/groceries/hall-of-fame')}>
-                    <ChefHat size={24} color="#FFFFFF" />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 16 }}>
+                    <TouchableOpacity onPress={clearCompleted}>
+                        <Trash2 size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/(app)/groceries/hall-of-fame')}>
+                        <ChefHat size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <KeyboardAvoidingView
@@ -337,16 +405,36 @@ export default function Groceries() {
                 keyboardVerticalOffset={100}
             >
                 <View style={styles.addItemContainer}>
-                    <TextInput
-                        style={styles.input}
-                        value={newItemName}
-                        onChangeText={setNewItemName}
-                        placeholder={Strings.groceries.addItemPlaceholder}
-                        placeholderTextColor={KribTheme.colors.text.secondary}
-                        onSubmitEditing={addItem}
-                        returnKeyType="done"
-                        editable={!submitting}
-                    />
+                    <View style={{ flex: 1 }}>
+                        <TextInput
+                            style={styles.input}
+                            value={newItemName}
+                            onChangeText={setNewItemName}
+                            placeholder={Strings.groceries.addItemPlaceholder}
+                            placeholderTextColor={KribTheme.colors.text.secondary}
+                            onSubmitEditing={addItem}
+                            returnKeyType="done"
+                            editable={!submitting}
+                        />
+                        {/* Suggestion Box */}
+                        {filteredSuggestions.length > 0 && (
+                            <View style={styles.suggestionBox}>
+                                {filteredSuggestions.slice(0, 3).map(sugg => (
+                                    <TouchableOpacity
+                                        key={sugg.id}
+                                        style={styles.suggestionItem}
+                                        onPress={() => {
+                                            setNewItemName(sugg.name);
+                                            // Optional: auto-add? Or just fill? Let's fill.
+                                            // addItem(); // If we want to auto-add
+                                        }}
+                                    >
+                                        <Text style={styles.suggestionText}>{sugg.name}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
+                    </View>
                     <TouchableOpacity
                         style={[styles.addButton, submitting && styles.addButtonDisabled]}
                         onPress={addItem}
@@ -597,5 +685,29 @@ const styles = StyleSheet.create({
     emptyListText: {
         color: KribTheme.colors.text.secondary,
         fontStyle: 'italic',
+    },
+    suggestionBox: {
+        position: 'absolute',
+        top: 50,
+        left: 0,
+        right: 12,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        zIndex: 10,
+        overflow: 'hidden',
+    },
+    suggestionItem: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    suggestionText: {
+        color: KribTheme.colors.text.primary,
+        fontSize: 14,
     },
 });

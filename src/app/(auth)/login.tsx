@@ -81,7 +81,7 @@ export default function Login() {
         >
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.container}>
-                    <StatusBar style="dark" backgroundColor="#FFFFFF" />
+                    <StatusBar style="light" />
                     <View style={styles.header}>
                         <Image
                             source={require('../../../assets/krib-logo.png')}
@@ -131,7 +131,7 @@ export default function Login() {
                             disabled={loading}
                         >
                             {loading ? (
-                                <ActivityIndicator color={KribTheme.colors.text.inverse} />
+                                <ActivityIndicator color={KribTheme.colors.primary} />
                             ) : (
                                 <Text style={styles.buttonText}>Inloggen</Text>
                             )}
@@ -155,7 +155,7 @@ export default function Login() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.background,
         padding: 24,
         justifyContent: 'center',
     },
@@ -171,12 +171,13 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: KribTheme.colors.primary,
+        color: KribTheme.colors.text.inverse,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: KribTheme.colors.primary,
+        color: KribTheme.colors.text.inverse,
+        opacity: 0.9,
     },
     form: {
         gap: 20,
@@ -187,19 +188,19 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: KribTheme.colors.primary,
+        color: KribTheme.colors.text.inverse,
     },
     input: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: KribTheme.colors.surface,
         borderWidth: 1,
-        borderColor: KribTheme.colors.primary,
+        borderColor: KribTheme.colors.border,
         borderRadius: KribTheme.borderRadius.m,
         padding: 16,
         fontSize: 16,
-        color: KribTheme.colors.primary,
+        color: KribTheme.colors.text.primary,
     },
     button: {
-        backgroundColor: KribTheme.colors.primary,
+        backgroundColor: KribTheme.colors.surface,
         padding: 16,
         borderRadius: KribTheme.borderRadius.m,
         alignItems: 'center',
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
         ...KribTheme.shadows.card,
     },
     buttonText: {
-        color: KribTheme.colors.text.inverse,
+        color: KribTheme.colors.primary,
         fontSize: 16,
         fontWeight: '600',
     },
@@ -217,12 +218,13 @@ const styles = StyleSheet.create({
         marginTop: 16,
     },
     footerText: {
-        color: KribTheme.colors.primary,
+        color: KribTheme.colors.text.inverse,
         fontSize: 14,
     },
     link: {
-        color: KribTheme.colors.primary,
+        color: KribTheme.colors.text.inverse,
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '700',
+        textDecorationLine: 'underline',
     },
 });
