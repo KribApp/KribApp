@@ -52,16 +52,15 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-    const styles = StyleSheet.create({
-        loadingContainer: {
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: '#F4F5F7',
-        },
-        logo: {
-            width: 150,
-            height: 150,
-            marginBottom: 32,
-        },
-    });
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F4F5F7',
+    },
+    logo: {
+        width: 150,
+        height: 150,
+        marginBottom: 32,
+    },
+});
