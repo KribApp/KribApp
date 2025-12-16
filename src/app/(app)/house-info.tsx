@@ -5,13 +5,15 @@ import { supabase } from '../../services/supabase';
 import { Save, User, Shield, Edit2, Settings, MoreVertical, Trash2, Crown, DollarSign, Calendar, MapPin, Menu } from 'lucide-react-native';
 import { ActionSheetIOS } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useTheme } from '../../context/ThemeContext';
 import { KribTheme } from '../../theme/theme';
 import { useRouter, useNavigation } from 'expo-router';
-import { DrawerActions } from '@react-navigation/native';
+import { DrawerToggleButton } from '@react-navigation/drawer';
 import { Image } from 'expo-image';
 export default function HouseInfo() {
     const router = useRouter();
     const navigation = useNavigation();
+    const { theme, isDarkMode } = useTheme();
     const [loading, setLoading] = useState(true);
     const [householdId, setHouseholdId] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
@@ -153,9 +155,9 @@ export default function HouseInfo() {
 
     function getRoleIcon(role: string) {
         switch (role) {
-            case 'ADMIN': return <Crown size={12} color="#FFFFFF" style={{ marginRight: 4 }} />;
-            case 'FISCUS': return <DollarSign size={12} color="#FFFFFF" style={{ marginRight: 4 }} />;
-            case 'CORVEE_PLANNER': return <Calendar size={12} color="#FFFFFF" style={{ marginRight: 4 }} />;
+            case 'ADMIN': return <Crown size={12} color={theme.colors.text.inverse} style={{ marginRight: 4 }} />;
+            case 'FISCUS': return <DollarSign size={12} color={theme.colors.text.inverse} style={{ marginRight: 4 }} />;
+            case 'CORVEE_PLANNER': return <Calendar size={12} color={theme.colors.text.inverse} style={{ marginRight: 4 }} />;
             default: return null;
         }
     }
@@ -249,15 +251,13 @@ export default function HouseInfo() {
     }
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}>
-                    <Menu size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Huis Info</Text>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+                <DrawerToggleButton tintColor={theme.colors.onBackground} />
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Huis Info</Text>
                 <TouchableOpacity onPress={() => router.push('/(app)/house-settings')}>
-                    <Settings size={24} color="#FFFFFF" />
+                    <Settings size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
             </View>
 
@@ -268,19 +268,18 @@ export default function HouseInfo() {
             >
                 <ScrollView contentContainerStyle={styles.content}>
                     {/* Address Section */}
-                    {/* Address Section */}
                     {address && (
-                        <View style={styles.addressCard}>
-                            <MapPin size={24} color={KribTheme.colors.text.secondary} />
+                        <View style={[styles.addressCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
+                            <MapPin size={24} color={theme.colors.text.secondary} />
                             <View style={{ marginLeft: 12, flex: 1 }}>
-                                <Text style={styles.addressText}>
+                                <Text style={[styles.addressText, { color: theme.colors.text.primary }]}>
                                     {address.street} {address.house_number}
                                 </Text>
-                                <Text style={styles.addressSubText}>
+                                <Text style={[styles.addressSubText, { color: theme.colors.text.secondary }]}>
                                     {address.postal_code} {address.city}
                                 </Text>
                                 {(address.province || address.country) && (
-                                    <Text style={styles.addressSubText}>
+                                    <Text style={[styles.addressSubText, { color: theme.colors.text.secondary }]}>
                                         {[address.province, address.country].filter(Boolean).join(', ')}
                                     </Text>
                                 )}
@@ -292,25 +291,26 @@ export default function HouseInfo() {
                     <View style={styles.section}>
                         <View style={styles.sectionHeader}>
                             <View style={styles.sectionTitleContainer}>
-                                <Text style={styles.sectionTitle}>Belangrijke Info</Text>
+                                <Text style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>Belangrijke Info</Text>
                             </View>
-                            <TouchableOpacity onPress={handleInfoButton} disabled={savingInfo} style={styles.saveButton}>
+                            <TouchableOpacity onPress={handleInfoButton} disabled={savingInfo} style={[styles.saveButton, { backgroundColor: theme.colors.primary }]}>
                                 {savingInfo ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                    <ActivityIndicator size="small" color={theme.colors.text.inverse} />
                                 ) : isEditing ? (
-                                    <Save size={20} color="#FFFFFF" />
+                                    <Save size={20} color={theme.colors.text.inverse} />
                                 ) : (
-                                    <Edit2 size={20} color="#FFFFFF" />
+                                    <Edit2 size={20} color={theme.colors.text.inverse} />
                                 )}
                             </TouchableOpacity>
                         </View>
-                        <View style={styles.infoCard}>
+                        <View style={[styles.infoCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                             <TextInput
-                                style={styles.infoInput}
+                                style={[styles.infoInput, { color: theme.colors.text.primary }]}
                                 multiline
                                 value={infoText}
                                 onChangeText={setInfoText}
                                 placeholder={isEditing ? "Schrijf hier belangrijke info (wifi codes, regels, etc)..." : "Nog geen info toegevoegd."}
+                                placeholderTextColor={theme.colors.text.secondary}
                                 textAlignVertical="top"
                                 editable={isEditing}
                             />
@@ -320,13 +320,13 @@ export default function HouseInfo() {
                     {/* Leden Section */}
                     <View style={styles.section}>
                         <View style={styles.sectionTitleContainer}>
-                            <Text style={styles.sectionTitle}>Leden</Text>
+                            <Text style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>Leden</Text>
                         </View>
                         <View style={styles.membersList}>
                             {members.map(member => (
-                                <TouchableOpacity key={member.id} style={styles.memberCard} onPress={() => handleMemberPress(member)}>
+                                <TouchableOpacity key={member.id} style={[styles.memberCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]} onPress={() => handleMemberPress(member)}>
                                     <View style={styles.memberInfo}>
-                                        <View style={styles.avatarPlaceholder}>
+                                        <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.background }]}>
                                             {member.users?.profile_picture_url ? (
                                                 <Image
                                                     source={{ uri: member.users.profile_picture_url }}
@@ -334,12 +334,12 @@ export default function HouseInfo() {
                                                     contentFit="cover"
                                                 />
                                             ) : (
-                                                <User size={20} color="#6B7280" />
+                                                <User size={20} color={theme.colors.text.secondary} />
                                             )}
                                         </View>
                                         <View>
-                                            <Text style={styles.memberName}>{member.users?.username || 'Onbekend'}</Text>
-                                            <Text style={styles.memberEmail}>{member.users?.email}</Text>
+                                            <Text style={[styles.memberName, { color: theme.colors.text.primary }]}>{member.users?.username || 'Onbekend'}</Text>
+                                            <Text style={[styles.memberEmail, { color: theme.colors.text.secondary }]}>{member.users?.email}</Text>
                                         </View>
                                     </View>
                                     <View style={[styles.roleBadge, getRoleStyle(member.role)]}>

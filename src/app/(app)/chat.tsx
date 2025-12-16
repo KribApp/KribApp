@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../services/supabase';
 import { DrawerToggleButton } from '@react-navigation/drawer';
+import { useTheme } from '../../context/ThemeContext';
 import { KribTheme } from '../../theme/theme';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -13,6 +14,7 @@ import { ImageViewerModal } from '../../components/ImageViewerModal';
 
 export default function Chat() {
     const navigation = useNavigation();
+    const { theme, isDarkMode } = useTheme();
     const [householdId, setHouseholdId] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
     const [currentUserProfile, setCurrentUserProfile] = useState<{ username: string, profile_picture_url: string | null } | null>(null);
@@ -454,8 +456,8 @@ export default function Chat() {
                                 contentFit="cover"
                             />
                         ) : (
-                            <View style={[styles.avatarPlaceholder, { backgroundColor: isOwnMessage ? KribTheme.colors.primary : '#9CA3AF' }]}>
-                                <User size={16} color="#FFFFFF" />
+                            <View style={[styles.avatarPlaceholder, { backgroundColor: isOwnMessage ? theme.colors.primary : theme.colors.text.secondary }]}>
+                                <User size={16} color={theme.colors.text.inverse} />
                             </View>
                         )}
                     </View>
@@ -464,7 +466,7 @@ export default function Chat() {
                         styles.messageContentWrapper,
                         isOwnMessage ? styles.ownMessageContentWrapper : styles.otherMessageContentWrapper
                     ]}>
-                        <Text style={[styles.senderName, isOwnMessage && { textAlign: 'right' }]}>{displayName}</Text>
+                        <Text style={[styles.senderName, { color: theme.colors.onBackground }, isOwnMessage && { textAlign: 'right' }]}>{displayName}</Text>
 
                         <TouchableOpacity
                             onPress={() => {
@@ -477,7 +479,7 @@ export default function Chat() {
                             activeOpacity={0.9}
                             style={[
                                 styles.messageContainer,
-                                isOwnMessage ? styles.ownMessage : styles.otherMessage,
+                                isOwnMessage ? [styles.ownMessage, { backgroundColor: theme.colors.surface }] : [styles.otherMessage, { backgroundColor: theme.colors.inputBackground }],
                                 item.attachment_type === 'image' && styles.imageMessageContainer
                             ]}
                         >
@@ -492,7 +494,7 @@ export default function Chat() {
                             {item.content && item.content !== 'Afbeelding verzonden' ? (
                                 <Text style={[
                                     styles.messageText,
-                                    isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
+                                    isOwnMessage ? [styles.ownMessageText, { color: theme.colors.text.primary }] : [styles.otherMessageText, { color: theme.colors.text.primary }],
                                     item.attachment_type === 'image' && { marginTop: 8 }
                                 ]}>{item.content}</Text>
                             ) : null}
@@ -512,17 +514,17 @@ export default function Chat() {
     };
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
-            <View style={styles.header}>
-                <DrawerToggleButton tintColor="#FFFFFF" />
-                <Text style={styles.headerTitle}>Chat</Text>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+                <DrawerToggleButton tintColor={theme.colors.onBackground} />
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Chat</Text>
                 <View style={{ width: 24 }} />
             </View>
 
-            <View style={styles.chatContainer}>
+            <View style={[styles.chatContainer, { backgroundColor: theme.colors.background }]}>
                 {loading ? (
-                    <ActivityIndicator style={{ marginTop: 20 }} />
+                    <ActivityIndicator style={{ marginTop: 20 }} color={theme.colors.primary} />
                 ) : (
                     <FlatList
                         ref={flatListRef}
@@ -532,7 +534,7 @@ export default function Chat() {
                         contentContainerStyle={styles.chatContent}
                         ListEmptyComponent={
                             <View style={styles.emptyChat}>
-                                <Text style={styles.emptyChatText}>Nog geen berichten vandaag.</Text>
+                                <Text style={[styles.emptyChatText, { color: theme.colors.text.secondary }]}>Nog geen berichten vandaag.</Text>
                             </View>
                         }
                         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
@@ -542,7 +544,7 @@ export default function Chat() {
 
             {typingUsers.length > 0 && (
                 <View style={styles.typingIndicator}>
-                    <Text style={styles.typingText}>
+                    <Text style={[styles.typingText, { color: theme.colors.text.secondary }]}>
                         {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'zijn'} aan het typen...
                     </Text>
                 </View>
@@ -551,36 +553,36 @@ export default function Chat() {
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={0}
-                style={{ backgroundColor: KribTheme.colors.surface }}
+                style={{ backgroundColor: theme.colors.surface }}
             >
-                <View style={styles.inputContainer}>
+                <View style={[styles.inputContainer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
                     <TouchableOpacity
                         style={styles.attachButton}
                         onPress={pickImage}
                         disabled={uploading}
                     >
                         {uploading ? (
-                            <ActivityIndicator size="small" color={KribTheme.colors.text.secondary} />
+                            <ActivityIndicator size="small" color={theme.colors.text.secondary} />
                         ) : (
-                            <Paperclip size={24} color={KribTheme.colors.text.secondary} />
+                            <Paperclip size={24} color={theme.colors.text.secondary} />
                         )}
                     </TouchableOpacity>
 
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text.primary }]}
                         value={message}
                         onChangeText={handleTextChange}
                         placeholder="Typ een bericht..."
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={theme.colors.text.secondary}
                         returnKeyType="send"
                         onSubmitEditing={() => sendMessage(message)}
                     />
                     <TouchableOpacity
-                        style={[styles.sendButton, (!message.trim() && !uploading) && styles.sendButtonDisabled]}
+                        style={[styles.sendButton, { backgroundColor: theme.colors.primary }, (!message.trim() && !uploading) && [styles.sendButtonDisabled, { backgroundColor: theme.colors.background }]]}
                         onPress={() => sendMessage(message)}
                         disabled={!message.trim() || uploading}
                     >
-                        <Send size={20} color="#FFFFFF" />
+                        <Send size={20} color={theme.colors.text.inverse} />
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>

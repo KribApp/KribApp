@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useState, useEffect } from 'react';
+import { useTheme } from '../../../context/ThemeContext';
 import { KribTheme } from '../../../theme/theme';
 import { supabase } from '../../../services/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -9,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function BalancePage() {
     const router = useRouter();
+    const { theme, isDarkMode } = useTheme();
     const [loading, setLoading] = useState(true);
     const [balances, setBalances] = useState<any[]>([]);
     const [totalSpent, setTotalSpent] = useState(0);
@@ -118,20 +120,20 @@ export default function BalancePage() {
     };
 
     const renderItem = ({ item }: { item: any }) => (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
             <View style={styles.userInfo}>
-                <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{item.username.charAt(0)}</Text>
+                <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
+                    <Text style={[styles.avatarText, { color: theme.colors.text.inverse }]}>{item.username.charAt(0)}</Text>
                 </View>
                 <View>
-                    <Text style={styles.username}>{item.username}</Text>
-                    <Text style={styles.subtext}>Betaald: €{item.paid.toFixed(2)} • Verbruikt: €{item.consumed.toFixed(2)}</Text>
+                    <Text style={[styles.username, { color: theme.colors.text.primary }]}>{item.username}</Text>
+                    <Text style={[styles.subtext, { color: theme.colors.text.secondary }]}>Betaald: €{item.paid.toFixed(2)} • Verbruikt: €{item.consumed.toFixed(2)}</Text>
                 </View>
             </View>
             <View style={styles.balanceContainer}>
                 <Text style={[
                     styles.balanceAmount,
-                    item.amount > 0.01 ? styles.positive : item.amount < -0.01 ? styles.negative : styles.neutral
+                    item.amount > 0.01 ? { color: theme.colors.success } : item.amount < -0.01 ? { color: theme.colors.error } : { color: theme.colors.text.secondary }
                 ]}>
                     {item.amount > 0 ? '+' : ''}€{item.amount.toFixed(2)}
                 </Text>
@@ -140,24 +142,24 @@ export default function BalancePage() {
     );
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <StatusBar style="light" />
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
 
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ArrowLeft size={24} color="#FFFFFF" />
+                <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: theme.colors.surface }]}>
+                    <ArrowLeft size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Huis Balans</Text>
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Huis Balans</Text>
                 <View style={{ width: 24 }} />
             </View>
 
-            <View style={styles.summary}>
-                <Text style={styles.summaryLabel}>Totaal Uitgegeven</Text>
-                <Text style={styles.summaryAmount}>€ {totalSpent.toFixed(2)}</Text>
+            <View style={[styles.summary, { borderBottomColor: theme.colors.border }]}>
+                <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>Totaal Uitgegeven</Text>
+                <Text style={[styles.summaryAmount, { color: theme.colors.onBackground }]}>€ {totalSpent.toFixed(2)}</Text>
             </View>
 
             {loading ? (
-                <ActivityIndicator style={{ marginTop: 40 }} color={KribTheme.colors.primary} />
+                <ActivityIndicator style={{ marginTop: 40 }} color={theme.colors.primary} />
             ) : (
                 <FlatList
                     data={balances}

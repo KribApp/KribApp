@@ -4,6 +4,7 @@ import { supabase } from '../../services/supabase';
 import { useHousehold } from '../../context/HouseholdContext';
 import { StatusBar } from 'expo-status-bar';
 import { DrawerToggleButton } from '@react-navigation/drawer';
+import { useTheme } from '../../context/ThemeContext';
 import { KribTheme } from '../../theme/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { Calendar as CalendarIcon, Check, X, Clock } from 'lucide-react-native';
@@ -12,6 +13,7 @@ import { toZonedTime, format } from 'date-fns-tz';
 import { subHours } from 'date-fns';
 
 export default function Agenda() {
+    const { theme, isDarkMode } = useTheme();
     const { household, user, loading: contextLoading } = useHousehold();
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState('');
@@ -223,28 +225,28 @@ export default function Agenda() {
     const renderItem = ({ item }: { item: any }) => {
         const isMe = item.user_id === userId;
 
-        let statusColor = KribTheme.colors.text.secondary; // Gray for PENDING
+        let statusColor = theme.colors.text.secondary; // Gray for PENDING
         let statusText = 'Nog niet gereageerd';
-        let statusIcon = <Clock size={20} color={KribTheme.colors.text.secondary} />;
+        let statusIcon = <Clock size={20} color={theme.colors.text.secondary} />;
 
         if (item.status === 'EATING') {
-            statusColor = KribTheme.colors.success;
+            statusColor = theme.colors.success;
             statusText = 'Eet mee';
-            statusIcon = <Check size={20} color={KribTheme.colors.success} />;
+            statusIcon = <Check size={20} color={theme.colors.success} />;
         } else if (item.status === 'NOT_EATING') {
-            statusColor = KribTheme.colors.error;
+            statusColor = theme.colors.error;
             statusText = 'Eet niet mee';
-            statusIcon = <X size={20} color={KribTheme.colors.error} />;
+            statusIcon = <X size={20} color={theme.colors.error} />;
         }
 
         return (
-            <View style={styles.memberRow}>
+            <View style={[styles.memberRow, { borderBottomColor: theme.colors.border }]}>
                 <View style={styles.memberInfo}>
-                    <View style={[styles.avatar, { backgroundColor: KribTheme.colors.border }]}>
-                        <Text style={styles.avatarText}>{item.username.substring(0, 1).toUpperCase()}</Text>
+                    <View style={[styles.avatar, { backgroundColor: theme.colors.border }]}>
+                        <Text style={[styles.avatarText, { color: theme.colors.text.secondary }]}>{item.username.substring(0, 1).toUpperCase()}</Text>
                     </View>
                     <View>
-                        <Text style={styles.memberName}>{item.username} {isMe && '(Jij)'}</Text>
+                        <Text style={[styles.memberName, { color: theme.colors.text.primary }]}>{item.username} {isMe && '(Jij)'}</Text>
                         <Text style={[styles.statusText, { color: statusColor }]}>{statusText}</Text>
                     </View>
                 </View>
@@ -256,11 +258,11 @@ export default function Agenda() {
     };
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
-            <View style={styles.header}>
-                <DrawerToggleButton tintColor="#FFFFFF" />
-                <Text style={styles.headerTitle}>Agenda</Text>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+                <DrawerToggleButton tintColor={theme.colors.onBackground} />
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Agenda</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -272,17 +274,17 @@ export default function Agenda() {
             />
 
             <View style={styles.content}>
-                <Text style={styles.sectionTitle}>Planning vandaag</Text>
-                <View style={styles.sectionCard}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>Planning vandaag</Text>
+                <View style={[styles.sectionCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                     {events.length > 0 && (
                         <View style={{ marginBottom: 16 }}>
-                            <Text style={styles.subSectionTitle}>Agenda</Text>
+                            <Text style={[styles.subSectionTitle, { color: theme.colors.text.secondary }]}>Agenda</Text>
                             {events.map(event => (
-                                <View key={event.id} style={styles.eventItem}>
-                                    <View style={[styles.eventBar, { backgroundColor: event.color || KribTheme.colors.primary }]} />
+                                <View key={event.id} style={[styles.eventItem, { backgroundColor: theme.colors.background }]}>
+                                    <View style={[styles.eventBar, { backgroundColor: event.color || theme.colors.primary }]} />
                                     <View style={styles.eventContent}>
-                                        <Text style={styles.eventTitle}>{event.title}</Text>
-                                        <Text style={styles.eventTime}>
+                                        <Text style={[styles.eventTitle, { color: theme.colors.text.primary }]}>{event.title}</Text>
+                                        <Text style={[styles.eventTime, { color: theme.colors.text.secondary }]}>
                                             {event.is_all_day
                                                 ? 'Hele dag'
                                                 : `${new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(event.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
@@ -291,19 +293,19 @@ export default function Agenda() {
                                     </View>
                                 </View>
                             ))}
-                            <View style={styles.divider} />
+                            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
                         </View>
                     )}
 
-                    <Text style={[styles.subSectionTitle, { marginBottom: 8 }]}>Taken</Text>
+                    <Text style={[styles.subSectionTitle, { marginBottom: 8, color: theme.colors.text.secondary }]}>Taken</Text>
                     {dailyChores.length > 0 ? (
                         dailyChores.map(chore => (
                             <View key={chore.id} style={styles.choreItem}>
-                                <View style={styles.choreDot} />
+                                <View style={[styles.choreDot, { backgroundColor: theme.colors.primary }]} />
                                 <View>
-                                    <Text style={styles.choreTitle}>{chore.title}</Text>
+                                    <Text style={[styles.choreTitle, { color: theme.colors.text.primary }]}>{chore.title}</Text>
                                     {chore.users && (
-                                        <Text style={styles.choreAssignee}>
+                                        <Text style={[styles.choreAssignee, { color: theme.colors.text.secondary }]}>
                                             {/* @ts-ignore */}
                                             {chore.users.username}
                                         </Text>
@@ -312,15 +314,15 @@ export default function Agenda() {
                             </View>
                         ))
                     ) : (
-                        <Text style={styles.emptyText}>Geen taken gepland</Text>
+                        <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>Geen taken gepland</Text>
                     )}
                 </View>
 
-                <View style={styles.sectionCard}>
+                <View style={[styles.sectionCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                     <View style={styles.diningHeader}>
-                        <Text style={styles.diningTitle}>Aantal eters</Text>
-                        <Text style={styles.diningCount}>{eatingCount}</Text>
-                        <Text style={styles.deadlineText}>Deadline: {deadline}</Text>
+                        <Text style={[styles.diningTitle, { color: theme.colors.text.secondary }]}>Aantal eters</Text>
+                        <Text style={[styles.diningCount, { color: theme.colors.text.primary }]}>{eatingCount}</Text>
+                        <Text style={[styles.deadlineText, { color: theme.colors.error }]}>Deadline: {deadline}</Text>
                     </View>
 
                     {(() => {
@@ -333,36 +335,38 @@ export default function Agenda() {
 
                         if (!isPastDate) {
                             return (
-                                <View style={styles.segmentedControl}>
+                                <View style={[styles.segmentedControl, { backgroundColor: theme.colors.background }]}>
                                     <TouchableOpacity
                                         style={[
                                             styles.segment,
-                                            item?.status === 'EATING' && styles.segmentActive,
-                                            item?.status === 'EATING' && { backgroundColor: KribTheme.colors.success + '20' }
+                                            item?.status === 'EATING' && [styles.segmentActive, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }],
+                                            item?.status === 'EATING' && { backgroundColor: theme.colors.success + '20' }
                                         ]}
                                         onPress={() => setStatus('EATING')}
                                     >
-                                        <Check size={18} color={item?.status === 'EATING' ? KribTheme.colors.success : KribTheme.colors.text.secondary} />
+                                        <Check size={18} color={item?.status === 'EATING' ? theme.colors.success : theme.colors.text.secondary} />
                                         <Text style={[
                                             styles.segmentText,
-                                            item?.status === 'EATING' && { color: KribTheme.colors.success }
+                                            { color: theme.colors.text.secondary },
+                                            item?.status === 'EATING' && { color: theme.colors.success }
                                         ]}>
                                             Ik eet mee
                                         </Text>
                                     </TouchableOpacity>
-                                    <View style={styles.segmentDivider} />
+                                    <View style={[styles.segmentDivider, { backgroundColor: theme.colors.border }]} />
                                     <TouchableOpacity
                                         style={[
                                             styles.segment,
-                                            item?.status === 'NOT_EATING' && styles.segmentActive,
-                                            item?.status === 'NOT_EATING' && { backgroundColor: KribTheme.colors.error + '20' }
+                                            item?.status === 'NOT_EATING' && [styles.segmentActive, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }],
+                                            item?.status === 'NOT_EATING' && { backgroundColor: theme.colors.error + '20' }
                                         ]}
                                         onPress={() => setStatus('NOT_EATING')}
                                     >
-                                        <X size={18} color={item?.status === 'NOT_EATING' ? KribTheme.colors.error : KribTheme.colors.text.secondary} />
+                                        <X size={18} color={item?.status === 'NOT_EATING' ? theme.colors.error : theme.colors.text.secondary} />
                                         <Text style={[
                                             styles.segmentText,
-                                            item?.status === 'NOT_EATING' && { color: KribTheme.colors.error }
+                                            { color: theme.colors.text.secondary },
+                                            item?.status === 'NOT_EATING' && { color: theme.colors.error }
                                         ]}>
                                             Ik eet niet mee
                                         </Text>

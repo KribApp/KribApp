@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { List } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useTheme } from '../../context/ThemeContext';
 import { KribTheme } from '../../theme/theme';
 import { DrawerToggleButton } from '@react-navigation/drawer';
 import { useChoresData } from '../../hooks/useChoresData';
@@ -13,6 +14,7 @@ import { AssignmentModal } from '../../components/chores/AssignmentModal';
 import { MyTodoList } from '../../components/chores/MyTodoList';
 
 export default function Huishouden() {
+    const { theme, isDarkMode } = useTheme();
     const {
         householdId,
         userRole,
@@ -243,31 +245,31 @@ export default function Huishouden() {
     const canManage = userRole === 'ADMIN' || userRole === 'CORVEE_PLANNER';
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
-            <View style={styles.header}>
-                <DrawerToggleButton tintColor="#FFFFFF" />
-                <Text style={styles.headerTitle}>Huishouden</Text>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+                <DrawerToggleButton tintColor={theme.colors.onBackground} />
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Huishouden</Text>
                 <TouchableOpacity
                     style={styles.taskListButton}
                     onPress={() => setShowTaskList(true)}
                 >
-                    <List size={24} color="#FFFFFF" />
+                    <List size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
             </View>
 
             <View style={styles.tabContainer}>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'MY_TASKS' && styles.activeTab]}
+                    style={[styles.tab, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }, activeTab === 'MY_TASKS' && [styles.activeTab, { backgroundColor: theme.colors.primary }]]}
                     onPress={() => setActiveTab('MY_TASKS')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'MY_TASKS' && styles.activeTabText]}>Mijn Taken</Text>
+                    <Text style={[styles.tabText, { color: theme.colors.text.secondary }, activeTab === 'MY_TASKS' && [styles.activeTabText, { color: theme.colors.text.inverse }]]}>Mijn Taken</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'CALENDAR' && styles.activeTab]}
+                    style={[styles.tab, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }, activeTab === 'CALENDAR' && [styles.activeTab, { backgroundColor: theme.colors.primary }]]}
                     onPress={() => setActiveTab('CALENDAR')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'CALENDAR' && styles.activeTabText]}>Schema</Text>
+                    <Text style={[styles.tabText, { color: theme.colors.text.secondary }, activeTab === 'CALENDAR' && [styles.activeTabText, { color: theme.colors.text.inverse }]]}>Schema</Text>
                 </TouchableOpacity>
             </View>
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { Bell, CheckCircle } from 'lucide-react-native';
 import { KribTheme } from '../../theme/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { Notification } from '../../types/models';
 
 interface AlertsListProps {
@@ -11,6 +12,8 @@ interface AlertsListProps {
 }
 
 export function AlertsList({ alerts, loading, onResolve }: AlertsListProps) {
+    const { theme } = useTheme();
+
     function getDateLabel(dateString: string) {
         const date = new Date(dateString);
         const now = new Date();
@@ -57,11 +60,15 @@ export function AlertsList({ alerts, loading, onResolve }: AlertsListProps) {
             <View>
                 {showDateDivider && (
                     <View style={styles.dateDivider}>
-                        <Text style={styles.dateDividerText}>{getDateLabel(item.created_at)}</Text>
+                        <Text style={[styles.dateDividerText, { color: theme.colors.text.secondary }]}>{getDateLabel(item.created_at)}</Text>
                     </View>
                 )}
                 <TouchableOpacity
-                    style={[styles.alertCard, isResolved && styles.alertCardResolved]}
+                    style={[
+                        styles.alertCard,
+                        { backgroundColor: theme.colors.inputBackground, borderLeftColor: theme.colors.secondary },
+                        isResolved && [styles.alertCardResolved, { backgroundColor: theme.colors.background, borderLeftColor: theme.colors.success }]
+                    ]}
                     onLongPress={handleLongPress}
                     delayLongPress={500} // "Short amount of time, a bit longer than instantly"
                     activeOpacity={0.7}
@@ -69,16 +76,20 @@ export function AlertsList({ alerts, loading, onResolve }: AlertsListProps) {
                 >
                     <View style={styles.alertIconContainer}>
                         {isResolved ? (
-                            <CheckCircle size={20} color={KribTheme.colors.success} />
+                            <CheckCircle size={20} color={theme.colors.success} />
                         ) : (
-                            <Bell size={20} color={KribTheme.colors.secondary} />
+                            <Bell size={20} color={theme.colors.secondary} />
                         )}
                     </View>
                     <View style={styles.alertContent}>
-                        <Text style={[styles.alertText, isResolved && styles.alertTextResolved]}>
+                        <Text style={[
+                            styles.alertText,
+                            { color: theme.colors.text.primary },
+                            isResolved && [styles.alertTextResolved, { color: theme.colors.text.secondary }]
+                        ]}>
                             {item.message || item.content}
                         </Text>
-                        <Text style={styles.alertTime}>
+                        <Text style={[styles.alertTime, { color: theme.colors.text.secondary }]}>
                             {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </Text>
                     </View>
@@ -88,8 +99,8 @@ export function AlertsList({ alerts, loading, onResolve }: AlertsListProps) {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.sectionTitle}>Recente Meldingen</Text>
+        <View style={[styles.container, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Recente Meldingen</Text>
 
             {loading ? (
                 <ActivityIndicator style={{ marginTop: 20 }} />
@@ -101,7 +112,7 @@ export function AlertsList({ alerts, loading, onResolve }: AlertsListProps) {
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={
                         <View style={styles.emptyList}>
-                            <Text style={styles.emptyListText}>Geen recente meldingen.</Text>
+                            <Text style={[styles.emptyListText, { color: theme.colors.text.secondary }]}>Geen recente meldingen.</Text>
                         </View>
                     }
                 />

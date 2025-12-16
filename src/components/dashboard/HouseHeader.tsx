@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { Menu } from 'lucide-react-native';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { KribTheme } from '../../theme/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 interface HouseHeaderProps {
     photoUrl: string | null;
@@ -13,6 +13,7 @@ interface HouseHeaderProps {
 
 export function HouseHeader({ photoUrl, householdName }: HouseHeaderProps) {
     const navigation = useNavigation();
+    const { theme } = useTheme();
 
     return (
         <View style={styles.photoContainer}>
@@ -24,7 +25,7 @@ export function HouseHeader({ photoUrl, householdName }: HouseHeaderProps) {
                     transition={1000}
                 />
             ) : (
-                <View style={styles.placeholderPhoto}>
+                <View style={[styles.placeholderPhoto, { backgroundColor: theme.colors.primary }]}>
                     <Text style={styles.placeholderText}>🏠</Text>
                 </View>
             )}
@@ -58,7 +59,8 @@ const styles = StyleSheet.create({
     placeholderPhoto: {
         width: '100%',
         height: '100%',
-        backgroundColor: KribTheme.colors.primary,
+        backgroundColor: '#5D5FEF', // This needs to be inline style if dynamic, but for now I can't put hook in styles.
+        // I will move backgroundColor to inline style
         justifyContent: 'center',
         alignItems: 'center',
     },

@@ -4,10 +4,12 @@ import { supabase } from '../../../services/supabase';
 import { Plus, Minus, ArrowLeft, UserPlus, X, RotateCcw, Calculator, Undo2 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTheme } from '../../../context/ThemeContext';
 import { KribTheme } from '../../../theme/theme';
 
 export default function TurfDetail() {
     const { id } = useLocalSearchParams();
+    const { theme, isDarkMode } = useTheme();
     const listName = decodeURIComponent(id as string);
     const router = useRouter();
 
@@ -268,24 +270,24 @@ export default function TurfDetail() {
     }
 
     const renderCounter = ({ item }: { item: any }) => (
-        <View style={styles.counterCard}>
-            <Text style={styles.memberName}>{item.users?.username || 'Onbekend'}</Text>
+        <View style={[styles.counterCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
+            <Text style={[styles.memberName, { color: theme.colors.text.primary }]}>{item.users?.username || 'Onbekend'}</Text>
             <View style={styles.counterControls}>
-                <TouchableOpacity onPress={() => updateCounter(item, -1)} style={styles.controlButton}>
-                    <Minus size={20} color={KribTheme.colors.primary} />
+                <TouchableOpacity onPress={() => updateCounter(item, -1)} style={[styles.controlButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <Minus size={20} color={theme.colors.primary} />
                 </TouchableOpacity>
-                <Text style={styles.count}>{item.count}</Text>
-                <TouchableOpacity onPress={() => updateCounter(item, 1)} style={styles.controlButton}>
-                    <Plus size={20} color={KribTheme.colors.primary} />
+                <Text style={[styles.count, { color: theme.colors.text.primary }]}>{item.count}</Text>
+                <TouchableOpacity onPress={() => updateCounter(item, 1)} style={[styles.controlButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <Plus size={20} color={theme.colors.primary} />
                 </TouchableOpacity>
 
                 {/* Custom Amount Button */}
-                <TouchableOpacity onPress={() => openCustomModal(item)} style={[styles.controlButton, { marginLeft: 8 }]}>
-                    <Calculator size={18} color={KribTheme.colors.primary} />
+                <TouchableOpacity onPress={() => openCustomModal(item)} style={[styles.controlButton, { marginLeft: 8, backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <Calculator size={18} color={theme.colors.primary} />
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => resetCounter(item)} style={[styles.controlButton, { marginLeft: 4 }]}>
-                    <RotateCcw size={18} color={KribTheme.colors.primary} />
+                <TouchableOpacity onPress={() => resetCounter(item)} style={[styles.controlButton, { marginLeft: 4, backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <RotateCcw size={18} color={theme.colors.primary} />
                 </TouchableOpacity>
             </View>
         </View>
@@ -294,13 +296,13 @@ export default function TurfDetail() {
     const renderMemberItem = ({ item }: { item: any }) => {
         const isAdded = counters.some(c => c.user_id === item.user_id);
         return (
-            <View style={styles.modalMemberItem}>
-                <Text style={styles.modalMemberName}>{item.users?.username}</Text>
+            <View style={[styles.modalMemberItem, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
+                <Text style={[styles.modalMemberName, { color: theme.colors.text.primary }]}>{item.users?.username}</Text>
                 <TouchableOpacity
-                    style={[styles.actionButton, isAdded ? styles.removeButton : styles.addButton]}
+                    style={[styles.actionButton, isAdded ? [styles.removeButton, { backgroundColor: theme.colors.error + '20' }] : [styles.addButton, { backgroundColor: theme.colors.primary + '20' }]]}
                     onPress={() => isAdded ? removeMemberFromList(item.user_id) : addMemberToList(item)}
                 >
-                    <Text style={[styles.actionButtonText, isAdded ? styles.removeButtonText : styles.addButtonText]}>
+                    <Text style={[styles.actionButtonText, isAdded ? [styles.removeButtonText, { color: theme.colors.error }] : [styles.addButtonText, { color: theme.colors.primary }]]}>
                         {isAdded ? 'Verwijder' : 'Toevoegen'}
                     </Text>
                 </TouchableOpacity>
@@ -309,20 +311,20 @@ export default function TurfDetail() {
     };
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
-            <View style={styles.header}>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ArrowLeft size={24} color="#FFFFFF" />
+                    <ArrowLeft size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{listName}</Text>
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>{listName}</Text>
                 <TouchableOpacity onPress={openMemberModal} style={styles.addButtonHeader}>
-                    <UserPlus size={24} color="#FFFFFF" />
+                    <UserPlus size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
             </View>
 
             {loading ? (
-                <ActivityIndicator style={{ marginTop: 20 }} />
+                <ActivityIndicator style={{ marginTop: 20 }} color={theme.colors.primary} />
             ) : (
                 <FlatList
                     data={counters}
@@ -331,9 +333,9 @@ export default function TurfDetail() {
                     contentContainerStyle={styles.listContainer}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
-                            <Text style={styles.emptyText}>Nog geen leden in deze lijst.</Text>
-                            <TouchableOpacity onPress={openMemberModal} style={styles.emptyButton}>
-                                <Text style={styles.emptyButtonText}>+ Leden toevoegen</Text>
+                            <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>Nog geen leden in deze lijst.</Text>
+                            <TouchableOpacity onPress={openMemberModal} style={[styles.emptyButton, { backgroundColor: theme.colors.primary }]}>
+                                <Text style={[styles.emptyButtonText, { color: theme.colors.text.inverse }]}>+ Leden toevoegen</Text>
                             </TouchableOpacity>
                         </View>
                     }
@@ -342,11 +344,11 @@ export default function TurfDetail() {
 
             {/* Undo Snackbar */}
             {showUndo && (
-                <View style={styles.undoContainer}>
-                    <Text style={styles.undoText}>Actie uitgevoerd</Text>
+                <View style={[styles.undoContainer, { backgroundColor: theme.colors.text.primary }]}>
+                    <Text style={[styles.undoText, { color: theme.colors.background }]}>Actie uitgevoerd</Text>
                     <TouchableOpacity onPress={executeUndo} style={styles.undoButton}>
-                        <Undo2 size={18} color="#FFFFFF" />
-                        <Text style={styles.undoButtonText}>Ongedaan maken</Text>
+                        <Undo2 size={18} color={theme.colors.background} />
+                        <Text style={[styles.undoButtonText, { color: theme.colors.background }]}>Ongedaan maken</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -357,15 +359,15 @@ export default function TurfDetail() {
                 presentationStyle="pageSheet"
                 onRequestClose={() => setShowMemberModal(false)}
             >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Leden beheren</Text>
+                <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+                    <View style={[styles.modalHeader, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
+                        <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Leden beheren</Text>
                         <TouchableOpacity onPress={() => setShowMemberModal(false)} style={styles.closeButton}>
-                            <X size={24} color="#6B7280" />
+                            <X size={24} color={theme.colors.text.secondary} />
                         </TouchableOpacity>
                     </View>
                     {loadingMembers ? (
-                        <ActivityIndicator style={{ marginTop: 20 }} />
+                        <ActivityIndicator style={{ marginTop: 20 }} color={theme.colors.primary} />
                     ) : (
                         <FlatList
                             data={allMembers}
@@ -383,27 +385,27 @@ export default function TurfDetail() {
                 animationType="fade"
                 onRequestClose={() => setShowCustomModal(false)}
             >
-                <View style={styles.customModalOverlay}>
-                    <View style={styles.customModalContent}>
-                        <Text style={styles.customModalTitle}>Aantal toevoegen</Text>
-                        <Text style={styles.customModalSubtitle}>Huidig: {selectedCounter?.count}</Text>
+                <View style={[styles.customModalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+                    <View style={[styles.customModalContent, { backgroundColor: theme.colors.surface }]}>
+                        <Text style={[styles.customModalTitle, { color: theme.colors.text.primary }]}>Aantal toevoegen</Text>
+                        <Text style={[styles.customModalSubtitle, { color: theme.colors.text.secondary }]}>Huidig: {selectedCounter?.count}</Text>
 
                         <TextInput
-                            style={styles.customInput}
+                            style={[styles.customInput, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text.primary }]}
                             value={customAmount}
                             onChangeText={setCustomAmount}
                             placeholder="Bijv. 12 (of -5)"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={theme.colors.text.secondary}
                             keyboardType="numbers-and-punctuation"
                             autoFocus
                         />
 
                         <View style={styles.customModalActions}>
-                            <TouchableOpacity style={styles.customCancelButton} onPress={() => setShowCustomModal(false)}>
-                                <Text style={styles.customCancelText}>Annuleren</Text>
+                            <TouchableOpacity style={[styles.customCancelButton, { backgroundColor: theme.colors.text.secondary + '20' }]} onPress={() => setShowCustomModal(false)}>
+                                <Text style={[styles.customCancelText, { color: theme.colors.text.primary }]}>Annuleren</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.customConfirmButton} onPress={handleCustomAmountSubmit}>
-                                <Text style={styles.customConfirmText}>Toevoegen</Text>
+                            <TouchableOpacity style={[styles.customConfirmButton, { backgroundColor: theme.colors.primary }]} onPress={handleCustomAmountSubmit}>
+                                <Text style={[styles.customConfirmText, { color: theme.colors.text.inverse }]}>Toevoegen</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -2,24 +2,26 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useTheme } from '../../context/ThemeContext';
 import { KribTheme } from '../../theme/theme';
 
 export function NoHouseholdState() {
     const router = useRouter();
+    const { theme, isDarkMode } = useTheme();
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="dark" />
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
             <View style={styles.emptyState}>
-                <View style={styles.emptyCard}>
-                    <Text style={styles.emptyTitle}>Geen huis gevonden</Text>
-                    <Text style={styles.emptyText}>Je bent nog geen lid van een huis.</Text>
+                <View style={[styles.emptyCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
+                    <Text style={[styles.emptyTitle, { color: theme.colors.text.primary }]}>Geen huis gevonden</Text>
+                    <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>Je bent nog geen lid van een huis.</Text>
                 </View>
                 <TouchableOpacity
-                    style={styles.createButton}
+                    style={[styles.createButton, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}
                     onPress={() => router.push('/(auth)/create-household')}
                 >
-                    <Text style={styles.createButtonText}>Huis Aanmaken</Text>
+                    <Text style={[styles.createButtonText, { color: theme.colors.primary }]}>Huis Aanmaken</Text>
                 </TouchableOpacity>
             </View>
         </View>

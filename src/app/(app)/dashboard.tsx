@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { KribTheme } from '../../theme/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { HouseHeader } from '../../components/dashboard/HouseHeader';
 import { DiningStatusCard } from '../../components/dashboard/DiningStatusCard';
 import { AlertsList } from '../../components/dashboard/AlertsList';
@@ -21,6 +22,7 @@ export default function Dashboard() {
         activityLogs,
         resolveAlert
     } = useDashboardData();
+    const { theme, isDarkMode } = useTheme();
 
     const router = useRouter();
 
@@ -29,8 +31,8 @@ export default function Dashboard() {
     }
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
 
             {/* Top 1/3: House Photo */}
             <HouseHeader photoUrl={photoUrl} householdName={householdName} />
@@ -40,7 +42,7 @@ export default function Dashboard() {
                 data={[]}
                 renderItem={null}
                 ListHeaderComponent={
-                    <View style={styles.contentSection}>
+                    <View style={[styles.contentSection, { backgroundColor: theme.colors.background }]}>
                         {/* Quick Actions */}
                         <QuickActions />
 
@@ -63,11 +65,10 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: KribTheme.colors.background,
     },
     contentSection: {
         flex: 1,
-        backgroundColor: KribTheme.colors.background,
+        // backgroundColor: dynamic now,
         borderTopLeftRadius: KribTheme.borderRadius.xl,
         borderTopRightRadius: KribTheme.borderRadius.xl,
         marginTop: -24,

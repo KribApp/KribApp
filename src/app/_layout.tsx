@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Slot } from 'expo-router';
 import { HouseholdProvider } from '../context/HouseholdContext';
+import { ThemeProvider } from '../context/ThemeContext';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
@@ -55,10 +56,12 @@ export default function RootLayout() {
 
     return (
         <SafeAreaProvider>
-            <HouseholdProvider>
-                <StatusBar style="auto" />
-                <Slot />
-            </HouseholdProvider>
+            <ThemeProvider>
+                <HouseholdProvider>
+                    <StatusBar style="auto" />
+                    <Slot />
+                </HouseholdProvider>
+            </ThemeProvider>
         </SafeAreaProvider>
     );
 }

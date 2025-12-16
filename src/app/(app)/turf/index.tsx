@@ -3,13 +3,16 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../services/supabase';
 import { Plus, Trash2, ChevronRight, Menu } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useTheme } from '../../../context/ThemeContext';
 import { KribTheme } from '../../../theme/theme';
+import { DrawerToggleButton } from '@react-navigation/drawer';
 import { useRouter, useNavigation } from 'expo-router';
 import { DrawerActions } from '@react-navigation/native';
 
 export default function TurfOverview() {
     const router = useRouter();
     const navigation = useNavigation();
+    const { theme, isDarkMode } = useTheme();
     const [loading, setLoading] = useState(true);
     const [householdId, setHouseholdId] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
@@ -142,29 +145,27 @@ export default function TurfOverview() {
 
     const renderItem = ({ item }: { item: string }) => (
         <TouchableOpacity
-            style={styles.listCard}
+            style={[styles.listCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}
             onPress={() => router.push(`/turf/${encodeURIComponent(item)}`)}
         >
             <View style={styles.listInfo}>
-                <Text style={styles.listName}>{item}</Text>
+                <Text style={[styles.listName, { color: theme.colors.text.primary }]}>{item}</Text>
             </View>
             <View style={styles.listActions}>
                 <TouchableOpacity onPress={() => deleteList(item)} style={styles.deleteButton}>
-                    <Trash2 size={20} color={KribTheme.colors.error} />
+                    <Trash2 size={20} color={theme.colors.error} />
                 </TouchableOpacity>
-                <ChevronRight size={20} color={KribTheme.colors.text.secondary} />
+                <ChevronRight size={20} color={theme.colors.text.secondary} />
             </View>
         </TouchableOpacity>
     );
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}>
-                    <Menu size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Turflijstjes</Text>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+                <DrawerToggleButton tintColor={theme.colors.onBackground} />
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Turflijstjes</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -176,29 +177,42 @@ export default function TurfOverview() {
                 <View style={styles.content}>
                     <View style={styles.inputContainer}>
                         <TextInput
-                            style={styles.input}
+                            style={[
+                                styles.input,
+                                {
+                                    backgroundColor: theme.colors.surface,
+                                    color: theme.colors.text.primary,
+                                    shadowColor: theme.shadows.card.shadowColor
+                                }
+                            ]}
                             value={newListName}
                             onChangeText={setNewListName}
                             placeholder="Nieuwe lijst (bijv. Bier)..."
-                            placeholderTextColor={KribTheme.colors.text.secondary}
+                            placeholderTextColor={theme.colors.text.secondary}
                             returnKeyType="done"
                             onSubmitEditing={addList}
                         />
                         <TouchableOpacity
-                            style={styles.addButton}
+                            style={[
+                                styles.addButton,
+                                {
+                                    backgroundColor: theme.colors.surface,
+                                    shadowColor: theme.shadows.card.shadowColor
+                                }
+                            ]}
                             onPress={addList}
                             disabled={creating}
                         >
                             {creating ? (
-                                <ActivityIndicator color={KribTheme.colors.primary} />
+                                <ActivityIndicator color={theme.colors.primary} />
                             ) : (
-                                <Plus size={24} color={KribTheme.colors.primary} />
+                                <Plus size={24} color={theme.colors.primary} />
                             )}
                         </TouchableOpacity>
                     </View>
 
                     {loading ? (
-                        <ActivityIndicator />
+                        <ActivityIndicator color={theme.colors.primary} />
                     ) : (
                         <FlatList
                             data={lists}
@@ -207,7 +221,7 @@ export default function TurfOverview() {
                             contentContainerStyle={styles.listContainer}
                             ListEmptyComponent={
                                 <View style={styles.emptyState}>
-                                    <Text style={styles.emptyText}>Nog geen lijsten. Maak er een aan!</Text>
+                                    <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>Nog geen lijsten. Maak er een aan!</Text>
                                 </View>
                             }
                         />

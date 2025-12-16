@@ -6,12 +6,14 @@ import { supabase } from '../services/supabase';
 import { KribTheme } from '../theme/theme';
 import { useHousehold } from '../context/HouseholdContext';
 import { useEffect, useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CustomDrawerContent(props: any) {
     const router = useRouter();
     const pathname = usePathname();
     const { user } = useHousehold();
+    const { theme } = useTheme();
     const userEmail = user?.email || '';
 
     const menuItems = [
@@ -26,7 +28,7 @@ export default function CustomDrawerContent(props: any) {
     ];
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
                 {/* Profile Header */}
                 <View style={styles.header}>
@@ -38,7 +40,7 @@ export default function CustomDrawerContent(props: any) {
                                 router.push('/(app)/user-settings');
                             }}
                         >
-                            <Settings size={20} color={KribTheme.colors.primary} />
+                            <Settings size={20} color={theme.colors.primary} />
                         </TouchableOpacity>
                         <View style={styles.avatarContainer}>
                             {user?.profile_picture_url ? (
@@ -47,14 +49,14 @@ export default function CustomDrawerContent(props: any) {
                                     style={{ width: 80, height: 80, borderRadius: 40 }}
                                 />
                             ) : (
-                                <User size={32} color={KribTheme.colors.primary} />
+                                <User size={32} color={theme.colors.primary} />
                             )}
                         </View>
                         <View style={{ width: 40 }} />
                     </View>
 
-                    <Text style={styles.username} numberOfLines={1}>{userEmail.split('@')[0]}</Text>
-                    <Text style={styles.email} numberOfLines={1}>{userEmail}</Text>
+                    <Text style={[styles.username, { color: theme.colors.text.inverse }]} numberOfLines={1}>{userEmail.split('@')[0]}</Text>
+                    <Text style={[styles.email, { color: theme.colors.text.inverse }]} numberOfLines={1}>{userEmail}</Text>
                 </View>
 
                 {/* Navigation Items */}
@@ -64,7 +66,11 @@ export default function CustomDrawerContent(props: any) {
                         return (
                             <TouchableOpacity
                                 key={index}
-                                style={[styles.item, isActive && styles.itemActive]}
+                                style={[
+                                    styles.item,
+                                    { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor },
+                                    isActive && { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.primary, borderWidth: 1 }
+                                ]}
                                 onPress={() => {
                                     props.navigation.closeDrawer();
                                     router.push(item.route as any);
@@ -72,9 +78,9 @@ export default function CustomDrawerContent(props: any) {
                             >
                                 <item.icon
                                     size={24}
-                                    color={isActive ? KribTheme.colors.primary : KribTheme.colors.text.primary}
+                                    color={isActive ? theme.colors.primary : theme.colors.text.primary}
                                 />
-                                <Text style={[styles.itemLabel, isActive && styles.itemLabelActive]}>
+                                <Text style={[styles.itemLabel, { color: theme.colors.text.primary }, isActive && { color: theme.colors.primary, fontWeight: 'bold' }]}>
                                     {item.label}
                                 </Text>
                             </TouchableOpacity>
@@ -89,7 +95,6 @@ export default function CustomDrawerContent(props: any) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: KribTheme.colors.background, // Full Indigo Background
     },
     header: {
         padding: 24,
@@ -125,12 +130,11 @@ const styles = StyleSheet.create({
     username: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#FFFFFF',
         marginBottom: 4,
     },
     email: {
         fontSize: 14,
-        color: 'rgba(255,255,255,0.8)',
+        opacity: 0.8,
     },
     itemsContainer: {
         paddingHorizontal: 16,
@@ -141,22 +145,12 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: KribTheme.borderRadius.m,
         marginBottom: 12,
-        backgroundColor: '#FFFFFF', // White buttons
         ...KribTheme.shadows.card,
     },
-    itemActive: {
-        borderWidth: 2,
-        borderColor: '#FFFFFF', // Optional: Highlight active item
-        backgroundColor: '#F0F0FF', // Slightly different white/blue for active
-    },
+
     itemLabel: {
         marginLeft: 16,
         fontSize: 16,
-        color: KribTheme.colors.text.primary,
         fontWeight: '600',
-    },
-    itemLabelActive: {
-        color: KribTheme.colors.primary,
-        fontWeight: 'bold',
     },
 });

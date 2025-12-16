@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../services/supabase';
 import { Plus, Wallet, FileText, ArrowRight, TrendingUp, RotateCcw } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useTheme } from '../../../context/ThemeContext';
 import { KribTheme } from '../../../theme/theme';
 import { DrawerToggleButton } from '@react-navigation/drawer';
 import { useRouter } from 'expo-router';
@@ -12,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FinancesFeed() {
     const router = useRouter();
+    const { theme, isDarkMode } = useTheme();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -202,31 +204,31 @@ export default function FinancesFeed() {
 
     const renderExpense = ({ item }: { item: any }) => (
         <TouchableOpacity
-            style={[styles.card, item.is_settled && styles.cardSettled]}
+            style={[styles.card, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }, item.is_settled && [styles.cardSettled, { backgroundColor: theme.colors.background }]]}
             activeOpacity={0.7}
             onPress={() => handleExpensePress(item)}
         >
-            <View style={styles.iconContainer}>
-                <Wallet size={20} color={item.is_settled ? '#9CA3AF' : KribTheme.colors.primary} />
+            <View style={[styles.iconContainer, { backgroundColor: item.is_settled ? theme.colors.border : theme.colors.primary + '20' }]}>
+                <Wallet size={20} color={item.is_settled ? theme.colors.text.secondary : theme.colors.primary} />
             </View>
             <View style={styles.details}>
                 <View style={styles.topRow}>
-                    <Text style={[styles.description, item.is_settled && styles.textSettled]} numberOfLines={1}>
+                    <Text style={[styles.description, { color: theme.colors.text.primary }, item.is_settled && [styles.textSettled, { color: theme.colors.text.secondary }]]} numberOfLines={1}>
                         {item.description}
                     </Text>
-                    <Text style={[styles.amount, item.is_settled && styles.textSettled]}>
+                    <Text style={[styles.amount, { color: theme.colors.text.primary }, item.is_settled && [styles.textSettled, { color: theme.colors.text.secondary }]]}>
                         € {item.amount.toFixed(2)}
                     </Text>
                 </View>
                 <View style={styles.bottomRow}>
-                    <Text style={styles.payer}>
-                        Betaald door <Text style={{ fontWeight: '600' }}>{item.payer?.username || 'Onbekend'}</Text>
+                    <Text style={[styles.payer, { color: theme.colors.text.secondary }]}>
+                        Betaald door <Text style={{ fontWeight: '600', color: theme.colors.text.secondary }}>{item.payer?.username || 'Onbekend'}</Text>
                     </Text>
                 </View>
                 {item.receipt_url && (
                     <View style={styles.receiptBadge}>
-                        <FileText size={12} color={KribTheme.colors.text.secondary} />
-                        <Text style={styles.receiptText}>Bonnetje</Text>
+                        <FileText size={12} color={theme.colors.text.secondary} />
+                        <Text style={[styles.receiptText, { color: theme.colors.text.secondary }]}>Bonnetje</Text>
                     </View>
                 )}
             </View>
@@ -237,40 +239,40 @@ export default function FinancesFeed() {
         <View>
             {section.showSettledSeparator && (
                 <View style={styles.settledSeparator}>
-                    <View style={styles.separatorLine} />
-                    <Text style={styles.separatorText}>VERREKEND</Text>
-                    <View style={styles.separatorLine} />
+                    <View style={[styles.separatorLine, { backgroundColor: theme.colors.border }]} />
+                    <Text style={[styles.separatorText, { color: theme.colors.text.secondary }]}>VERREKEND</Text>
+                    <View style={[styles.separatorLine, { backgroundColor: theme.colors.border }]} />
                 </View>
             )}
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionHeaderText}>{section.title}</Text>
+                <Text style={[styles.sectionHeaderText, { color: theme.colors.text.secondary }]}>{section.title}</Text>
             </View>
         </View>
     );
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
 
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
                 <View style={styles.headerTop}>
-                    <DrawerToggleButton tintColor="#FFFFFF" />
-                    <Text style={styles.headerTitle}>Financiën</Text>
+                    <DrawerToggleButton tintColor={theme.colors.onBackground} />
+                    <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Financiën</Text>
                     <View style={{ flexDirection: 'row', gap: 16 }}>
                         {(userRole === 'ADMIN' || userRole === 'FISCUS') && (
                             <TouchableOpacity onPress={handleResetBalance}>
-                                <RotateCcw size={24} color="#EF4444" />
+                                <RotateCcw size={24} color={theme.colors.error} />
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity onPress={() => router.push('/finances/balance')}>
-                            <TrendingUp size={24} color="#FFFFFF" />
+                            <TrendingUp size={24} color={theme.colors.onBackground} />
                         </TouchableOpacity>
                     </View>
                 </View>
             </View>
 
             {loading ? (
-                <ActivityIndicator style={{ marginTop: 40 }} color={KribTheme.colors.primary} />
+                <ActivityIndicator style={{ marginTop: 40 }} color={theme.colors.primary} />
             ) : (
                 <SectionList
                     sections={groupedExpenses}
@@ -282,15 +284,15 @@ export default function FinancesFeed() {
                     onRefresh={handleRefresh}
                     ListEmptyComponent={
                         <View style={styles.empty}>
-                            <Text style={styles.emptyText}>Nog geen uitgaven. Voeg er een toe!</Text>
+                            <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>Nog geen uitgaven. Voeg er een toe!</Text>
                         </View>
                     }
                     stickySectionHeadersEnabled={false}
                 />
             )}
 
-            <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-                <Plus size={32} color="#FFFFFF" />
+            <TouchableOpacity style={[styles.fab, { backgroundColor: theme.colors.primary, shadowColor: theme.shadows.floating.shadowColor }]} onPress={() => setModalVisible(true)}>
+                <Plus size={32} color={theme.colors.text.inverse} />
             </TouchableOpacity>
 
             {householdId && currentUserId && (

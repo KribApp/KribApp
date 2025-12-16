@@ -7,8 +7,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { KribTheme } from '../../theme/theme';
+import { useTheme } from '../../context/ThemeContext';
 import * as ImagePicker from 'expo-image-picker';
-import { MediaTypeOptions } from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Image } from 'expo-image';
@@ -17,6 +17,7 @@ import { Strings } from '../../constants/strings';
 export default function HouseSettings() {
     const router = useRouter();
     const { household, member, loading: contextLoading, refreshHousehold } = useHousehold();
+    const { theme, isDarkMode } = useTheme();
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
 
@@ -94,7 +95,7 @@ export default function HouseSettings() {
 
     const handlePickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [16, 9],
             quality: 0.8,
@@ -217,13 +218,13 @@ export default function HouseSettings() {
     }
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
-            <View style={styles.header}>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
                 <TouchableOpacity onPress={() => router.replace('/(app)/house-info')} style={styles.backButton}>
-                    <ArrowLeft size={24} color="#FFFFFF" />
+                    <ArrowLeft size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Huis Instellingen</Text>
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Huis Instellingen</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -236,24 +237,24 @@ export default function HouseSettings() {
 
                     {/* SECTION: GENERAL */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={styles.sectionHeaderText}>ALGEMEEN</Text>
+                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.secondary }]}>ALGEMEEN</Text>
                     </View>
-                    <View style={styles.card}>
+                    <View style={[styles.card, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                         <View style={styles.photoContainer}>
                             {photoUrl ? (
-                                <Image source={{ uri: photoUrl }} style={styles.photoPreview} contentFit="cover" />
+                                <Image source={{ uri: photoUrl }} style={[styles.photoPreview, { backgroundColor: theme.colors.inputBackground }]} contentFit="cover" />
                             ) : (
-                                <View style={[styles.photoPreview, styles.photoPlaceholder]}>
-                                    <ImageIcon size={32} color={KribTheme.colors.text.secondary} />
+                                <View style={[styles.photoPreview, styles.photoPlaceholder, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.border }]}>
+                                    <ImageIcon size={32} color={theme.colors.text.secondary} />
                                 </View>
                             )}
 
                             {isAdmin && (
-                                <TouchableOpacity style={styles.changePhotoButton} onPress={handleChangePhoto} disabled={uploading}>
+                                <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: theme.colors.primary, borderColor: theme.colors.surface }]} onPress={handleChangePhoto} disabled={uploading}>
                                     {uploading ? (
-                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                        <ActivityIndicator size="small" color={theme.colors.text.inverse} />
                                     ) : (
-                                        <Camera size={20} color="#FFFFFF" />
+                                        <Camera size={20} color={theme.colors.text.inverse} />
                                     )}
                                 </TouchableOpacity>
                             )}
@@ -261,20 +262,20 @@ export default function HouseSettings() {
 
                         {showLinkInput && isAdmin && (
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Foto URL</Text>
-                                <View style={styles.inputWrapper}>
-                                    <LinkIcon size={20} color={KribTheme.colors.text.secondary} style={styles.inputIcon} />
+                                <Text style={[styles.label, { color: theme.colors.text.primary }]}>Foto URL</Text>
+                                <View style={[styles.inputWrapper, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.border }]}>
+                                    <LinkIcon size={20} color={theme.colors.text.secondary} style={styles.inputIcon} />
                                     <TextInput
-                                        style={styles.input}
+                                        style={[styles.input, { color: theme.colors.text.primary }]}
                                         value={photoUrl}
                                         onChangeText={setPhotoUrl}
                                         placeholder="https://example.com/image.jpg"
-                                        placeholderTextColor="#9CA3AF"
+                                        placeholderTextColor={theme.colors.text.secondary}
                                         autoCapitalize="none"
                                     />
                                     {photoUrl.length > 0 && (
                                         <TouchableOpacity onPress={() => setPhotoUrl('')} style={{ padding: 4 }}>
-                                            <X size={20} color="#9CA3AF" />
+                                            <X size={20} color={theme.colors.text.secondary} />
                                         </TouchableOpacity>
                                     )}
                                 </View>
@@ -282,15 +283,15 @@ export default function HouseSettings() {
                         )}
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Naam Huishouden</Text>
-                            <View style={styles.inputWrapper}>
-                                <Users size={20} color={KribTheme.colors.text.secondary} style={styles.inputIcon} />
+                            <Text style={[styles.label, { color: theme.colors.text.primary }]}>Naam Huishouden</Text>
+                            <View style={[styles.inputWrapper, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.border }]}>
+                                <Users size={20} color={theme.colors.text.secondary} style={styles.inputIcon} />
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { color: theme.colors.text.primary }]}
                                     value={name}
                                     onChangeText={setName}
                                     placeholder="Naam"
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={theme.colors.text.secondary}
                                     editable={isAdmin}
                                 />
                             </View>
@@ -299,15 +300,15 @@ export default function HouseSettings() {
 
                     {/* SECTION: LOCATIE */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={styles.sectionHeaderText}>LOCATIE (ALLEEN LEZEN)</Text>
+                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.secondary }]}>LOCATIE (ALLEEN LEZEN)</Text>
                     </View>
-                    <View style={styles.card}>
+                    <View style={[styles.card, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Adres</Text>
-                            <View style={[styles.inputWrapper, { backgroundColor: '#F3F4F6' }]}>
-                                <MapPin size={20} color={KribTheme.colors.text.secondary} style={styles.inputIcon} />
+                            <Text style={[styles.label, { color: theme.colors.text.primary }]}>Adres</Text>
+                            <View style={[styles.inputWrapper, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.border }]}>
+                                <MapPin size={20} color={theme.colors.text.secondary} style={styles.inputIcon} />
                                 <TextInput
-                                    style={[styles.input, { color: '#6B7280' }]}
+                                    style={[styles.input, { color: theme.colors.text.secondary }]}
                                     value={`${street} ${houseNumber}`}
                                     editable={false}
                                 />
@@ -315,15 +316,15 @@ export default function HouseSettings() {
                         </View>
                         <View style={styles.row}>
                             <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                                <Text style={styles.label}>Postcode</Text>
-                                <View style={[styles.inputWrapper, { backgroundColor: '#F3F4F6' }]}>
-                                    <TextInput style={[styles.input, { color: '#6B7280' }]} value={postalCode} editable={false} />
+                                <Text style={[styles.label, { color: theme.colors.text.primary }]}>Postcode</Text>
+                                <View style={[styles.inputWrapper, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.border }]}>
+                                    <TextInput style={[styles.input, { color: theme.colors.text.secondary }]} value={postalCode} editable={false} />
                                 </View>
                             </View>
                             <View style={[styles.inputGroup, { flex: 2, marginLeft: 8 }]}>
-                                <Text style={styles.label}>Stad</Text>
-                                <View style={[styles.inputWrapper, { backgroundColor: '#F3F4F6' }]}>
-                                    <TextInput style={[styles.input, { color: '#6B7280' }]} value={city} editable={false} />
+                                <Text style={[styles.label, { color: theme.colors.text.primary }]}>Stad</Text>
+                                <View style={[styles.inputWrapper, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.border }]}>
+                                    <TextInput style={[styles.input, { color: theme.colors.text.secondary }]} value={city} editable={false} />
                                 </View>
                             </View>
                         </View>
@@ -331,19 +332,19 @@ export default function HouseSettings() {
 
                     {/* SECTION: CONFIG */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={styles.sectionHeaderText}>EETLIJST CONFIGURATIE</Text>
+                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.secondary }]}>EETLIJST CONFIGURATIE</Text>
                     </View>
-                    <View style={styles.card}>
+                    <View style={[styles.card, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Deadline Avondeten</Text>
-                            <View style={styles.inputWrapper}>
-                                <Clock size={20} color={KribTheme.colors.text.secondary} style={styles.inputIcon} />
+                            <Text style={[styles.label, { color: theme.colors.text.primary }]}>Deadline Avondeten</Text>
+                            <View style={[styles.inputWrapper, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.border }]}>
+                                <Clock size={20} color={theme.colors.text.secondary} style={styles.inputIcon} />
                                 {Platform.OS === 'android' && (
                                     <TouchableOpacity
                                         style={[styles.input, { justifyContent: 'center' }]}
                                         onPress={() => isAdmin && setShowTimePicker(true)}
                                     >
-                                        <Text style={{ color: '#111827' }}>{deadlineTime.substring(0, 5)}</Text>
+                                        <Text style={{ color: theme.colors.text.primary }}>{deadlineTime.substring(0, 5)}</Text>
                                     </TouchableOpacity>
                                 )}
                                 {Platform.OS === 'ios' && (
@@ -394,16 +395,16 @@ export default function HouseSettings() {
 
                         <View style={styles.settingRow}>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.settingTitle}>Standaard Mee-eten</Text>
-                                <Text style={styles.settingSubtitle}>
+                                <Text style={[styles.settingTitle, { color: theme.colors.text.primary }]}>Standaard Mee-eten</Text>
+                                <Text style={[styles.settingSubtitle, { color: theme.colors.text.secondary }]}>
                                     {noResponseAction === 'EAT'
                                         ? "Iedereen eet mee, tenzij afgemeld"
                                         : "Niemand eet mee, tenzij aangemeld"}
                                 </Text>
                             </View>
                             <Switch
-                                trackColor={{ false: "#E5E7EB", true: "#818CF8" }}
-                                thumbColor={noResponseAction === 'EAT' ? "#5D5FEF" : "#f4f3f4"}
+                                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                                thumbColor={noResponseAction === 'EAT' ? theme.colors.surface : "#f4f3f4"}
                                 onValueChange={(val) => {
                                     if (isAdmin) setNoResponseAction(val ? 'EAT' : 'NO_EAT');
                                 }}
@@ -415,11 +416,11 @@ export default function HouseSettings() {
 
                     {/* SECTION: INVITE */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={styles.sectionHeaderText}>UITNODIGINGSCODE</Text>
+                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.secondary }]}>UITNODIGINGSCODE</Text>
                     </View>
-                    <View style={[styles.card, { alignItems: 'center' }]}>
-                        <Text style={styles.inviteCode}>{inviteCode}</Text>
-                        <Text style={styles.helperText}>Deel deze code met huisgenoten</Text>
+                    <View style={[styles.card, { alignItems: 'center', backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
+                        <Text style={[styles.inviteCode, { color: theme.colors.primary }]}>{inviteCode}</Text>
+                        <Text style={[styles.helperText, { color: theme.colors.text.secondary }]}>Deel deze code met huisgenoten</Text>
                     </View>
 
                     {isAdmin && (
@@ -428,25 +429,25 @@ export default function HouseSettings() {
                                 <ActivityIndicator color="#FFFFFF" />
                             ) : (
                                 <>
-                                    <Save size={20} color="#FFFFFF" />
-                                    <Text style={styles.saveButtonText}>Opslaan</Text>
+                                    <Save size={20} color={theme.colors.text.inverse} />
+                                    <Text style={[styles.saveButtonText, { color: theme.colors.text.inverse }]}>Opslaan</Text>
                                 </>
                             )}
                         </TouchableOpacity>
                     )}
 
                     {!isAdmin && (
-                        <Text style={styles.warningText}>Alleen beheerders kunnen deze instellingen wijzigen.</Text>
+                        <Text style={[styles.warningText, { color: theme.colors.text.secondary }]}>Alleen beheerders kunnen deze instellingen wijzigen.</Text>
                     )}
 
                     {/* DANGER ZONE */}
                     <View style={[styles.sectionHeaderContainer, { marginTop: 32 }]}>
-                        <Text style={[styles.sectionHeaderText, { color: '#EF4444' }]}>DANGER ZONE</Text>
+                        <Text style={[styles.sectionHeaderText, { color: theme.colors.error }]}>DANGER ZONE</Text>
                     </View>
-                    <View style={[styles.card, { borderColor: '#EF4444', borderWidth: 1 }]}>
+                    <View style={[styles.card, { borderColor: theme.colors.error, borderWidth: 1, backgroundColor: theme.colors.surface }]}>
                         <TouchableOpacity style={styles.leaveButton} onPress={handleLeaveHousehold}>
-                            <LogOut size={20} color="#EF4444" />
-                            <Text style={styles.leaveButtonText}>Verlaat Huis</Text>
+                            <LogOut size={20} color={theme.colors.error} />
+                            <Text style={[styles.leaveButtonText, { color: theme.colors.error }]}>Verlaat Huis</Text>
                         </TouchableOpacity>
                     </View>
 

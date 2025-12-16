@@ -5,12 +5,14 @@ import { Plus, DollarSign, ArrowLeft, User, ArrowRight, Camera, FileText } from 
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../../context/ThemeContext';
 import { KribTheme } from '../../../theme/theme';
 import * as ImagePicker from 'expo-image-picker';
 import { decode } from 'base64-arraybuffer';
 
 export default function ListDetail() {
     const { id } = useLocalSearchParams();
+    const { theme, isDarkMode } = useTheme();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [listName, setListName] = useState('Laden...');
@@ -264,34 +266,34 @@ export default function ListDetail() {
     }
 
     const renderExpense = ({ item }: { item: any }) => (
-        <View style={styles.expenseCard}>
-            <View style={styles.expenseIcon}>
+        <View style={[styles.expenseCard, { backgroundColor: theme.colors.surface }]}>
+            <View style={[styles.expenseIcon, { backgroundColor: theme.colors.background }]}>
                 <Text style={styles.expenseDate}>
                     {new Date(item.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
                 </Text>
             </View>
             <View style={styles.expenseDetails}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.expenseTitle}>{item.description}</Text>
-                    {item.receipt_url && <FileText size={14} color={KribTheme.colors.text.secondary} />}
+                    <Text style={[styles.expenseTitle, { color: theme.colors.text.primary }]}>{item.description}</Text>
+                    {item.receipt_url && <FileText size={14} color={theme.colors.text.secondary} />}
                 </View>
-                <Text style={styles.expensePayer}>{item.payer?.username} betaalde</Text>
+                <Text style={[styles.expensePayer, { color: theme.colors.text.secondary }]}>{item.payer?.username} betaalde</Text>
             </View>
-            <Text style={styles.expenseAmount}>€ {item.amount.toFixed(2)}</Text>
+            <Text style={[styles.expenseAmount, { color: theme.colors.text.primary }]}>€ {item.amount.toFixed(2)}</Text>
         </View>
     );
 
     const renderBalance = ({ item }: { item: any }) => (
-        <View style={styles.balanceRow}>
+        <View style={[styles.balanceRow, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.userRow}>
-                <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarText}>{item.username.substring(0, 1)}</Text>
+                <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.primary + '20' }]}>
+                    <Text style={[styles.avatarText, { color: theme.colors.primary }]}>{item.username.substring(0, 1)}</Text>
                 </View>
-                <Text style={styles.balanceUsername}>{item.username}</Text>
+                <Text style={[styles.balanceUsername, { color: theme.colors.text.primary }]}>{item.username}</Text>
             </View>
             <Text style={[
                 styles.balanceAmount,
-                item.amount > 0 ? styles.positive : item.amount < 0 ? styles.negative : styles.neutral
+                item.amount > 0 ? { color: theme.colors.success } : item.amount < 0 ? { color: theme.colors.error } : { color: theme.colors.text.secondary }
             ]}>
                 {item.amount > 0 ? '+' : ''}€ {item.amount.toFixed(2)}
             </Text>
@@ -365,63 +367,63 @@ export default function ListDetail() {
         const toMember = members.find(m => m.users.username === item.to);
 
         return (
-            <View style={styles.settlementCard}>
+            <View style={[styles.settlementCard, { backgroundColor: theme.colors.surface }]}>
                 <View style={styles.settlementInfo}>
-                    <Text style={styles.settlementText}>
+                    <Text style={[styles.settlementText, { color: theme.colors.text.primary }]}>
                         <Text style={{ fontWeight: 'bold' }}>{item.from}</Text> betaalt <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
                     </Text>
-                    <Text style={styles.settlementAmount}>€ {item.amount.toFixed(2)}</Text>
+                    <Text style={[styles.settlementAmount, { color: theme.colors.text.primary }]}>€ {item.amount.toFixed(2)}</Text>
                 </View>
 
                 {/* Only show button if current user is the one who needs to pay, OR maybe allow anyone to register it? 
                     For MVP, let's allow anyone to register it to be flexible. 
                 */}
                 <TouchableOpacity
-                    style={styles.settleButton}
+                    style={[styles.settleButton, { backgroundColor: theme.colors.primary }]}
                     onPress={() => {
                         if (fromMember && toMember) {
                             settleDebt(fromMember.user_id, toMember.user_id, item.amount);
                         }
                     }}
                 >
-                    <Text style={styles.settleButtonText}>Verreken</Text>
+                    <Text style={[styles.settleButtonText, { color: theme.colors.text.inverse }]}>Verreken</Text>
                 </TouchableOpacity>
             </View>
         );
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <StatusBar style="light" />
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.background }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ArrowLeft size={24} color="#FFFFFF" />
+                    <ArrowLeft size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{listName}</Text>
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>{listName}</Text>
                 <View style={{ width: 24 }} />
             </View>
 
             {/* Tabs */}
-            <View style={styles.tabs}>
+            <View style={[styles.tabs, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.background }]}>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'EXPENSES' && styles.activeTab]}
+                    style={[styles.tab, { borderBottomColor: 'transparent' }, activeTab === 'EXPENSES' && [styles.activeTab, { borderBottomColor: theme.colors.primary }]]}
                     onPress={() => setActiveTab('EXPENSES')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'EXPENSES' && styles.activeTabText]}>Uitgaven</Text>
+                    <Text style={[styles.tabText, { color: theme.colors.text.secondary }, activeTab === 'EXPENSES' && [styles.activeTabText, { color: theme.colors.primary }]]}>Uitgaven</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'BALANCE' && styles.activeTab]}
+                    style={[styles.tab, { borderBottomColor: 'transparent' }, activeTab === 'BALANCE' && [styles.activeTab, { borderBottomColor: theme.colors.primary }]]}
                     onPress={() => setActiveTab('BALANCE')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'BALANCE' && styles.activeTabText]}>Balans</Text>
+                    <Text style={[styles.tabText, { color: theme.colors.text.secondary }, activeTab === 'BALANCE' && [styles.activeTabText, { color: theme.colors.primary }]]}>Balans</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'SETTLE' && styles.activeTab]}
+                    style={[styles.tab, { borderBottomColor: 'transparent' }, activeTab === 'SETTLE' && [styles.activeTab, { borderBottomColor: theme.colors.primary }]]}
                     onPress={() => setActiveTab('SETTLE')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'SETTLE' && styles.activeTabText]}>Verrekenen</Text>
+                    <Text style={[styles.tabText, { color: theme.colors.text.secondary }, activeTab === 'SETTLE' && [styles.activeTabText, { color: theme.colors.primary }]]}>Verrekenen</Text>
                 </TouchableOpacity>
             </View>
 
@@ -437,7 +439,7 @@ export default function ListDetail() {
                                 renderItem={renderExpense}
                                 keyExtractor={item => item.id}
                                 contentContainerStyle={styles.listContent}
-                                ListEmptyComponent={<Text style={styles.emptyText}>Geen uitgaven gevonden.</Text>}
+                                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>Geen uitgaven gevonden.</Text>}
                             />
                         )}
 
@@ -447,7 +449,7 @@ export default function ListDetail() {
                                 renderItem={renderBalance}
                                 keyExtractor={item => item.user_id}
                                 contentContainerStyle={styles.listContent}
-                                ListEmptyComponent={<Text style={styles.emptyText}>Geen balans data.</Text>}
+                                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>Geen balans data.</Text>}
                             />
                         )}
 
@@ -457,7 +459,7 @@ export default function ListDetail() {
                                 renderItem={renderSettlement}
                                 keyExtractor={(item, index) => index.toString()}
                                 contentContainerStyle={styles.listContent}
-                                ListEmptyComponent={<Text style={styles.emptyText}>Iedereen staat quitte!</Text>}
+                                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>Iedereen staat quitte!</Text>}
                             />
                         )}
                     </>
@@ -466,8 +468,8 @@ export default function ListDetail() {
 
             {/* FAB */}
             {activeTab === 'EXPENSES' && (
-                <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-                    <Plus size={32} color="#FFFFFF" />
+                <TouchableOpacity style={[styles.fab, { backgroundColor: theme.colors.primary, shadowColor: theme.shadows.floating.shadowColor }]} onPress={() => setModalVisible(true)}>
+                    <Plus size={32} color={theme.colors.text.inverse} />
                 </TouchableOpacity>
             )}
 
@@ -478,19 +480,19 @@ export default function ListDetail() {
                 onRequestClose={() => setModalVisible(false)}
             >
                 <KeyboardAvoidingView
-                    style={styles.modalOverlay}
+                    style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Nieuwe Uitgave</Text>
+                    <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+                        <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Nieuwe Uitgave</Text>
 
-                        <Text style={styles.label}>Beschrijving</Text>
+                        <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Beschrijving</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text.primary }]}
                             value={description}
                             onChangeText={setDescription}
                             placeholder="Wat heb je gekocht?"
-                            placeholderTextColor={KribTheme.colors.text.secondary}
+                            placeholderTextColor={theme.colors.text.secondary}
 
                             returnKeyType="next"
                         />
@@ -502,36 +504,36 @@ export default function ListDetail() {
                             {receipt ? (
                                 <View style={styles.receiptPreview}>
                                     <Image source={{ uri: receipt }} style={styles.receiptImage} />
-                                    <Text style={styles.receiptText}>Bonnetje geselecteerd</Text>
+                                    <Text style={[styles.receiptText, { color: theme.colors.text.secondary }]}>Bonnetje geselecteerd</Text>
                                 </View>
                             ) : (
                                 <View style={styles.receiptPlaceholder}>
-                                    <Camera size={20} color={KribTheme.colors.text.secondary} />
-                                    <Text style={styles.receiptText}>Bonnetje toevoegen</Text>
+                                    <Camera size={20} color={theme.colors.text.secondary} />
+                                    <Text style={[styles.receiptText, { color: theme.colors.text.secondary }]}>Bonnetje toevoegen</Text>
                                 </View>
                             )}
                         </TouchableOpacity>
 
-                        <Text style={styles.label}>Bedrag (€)</Text>
+                        <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Bedrag (€)</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text.primary }]}
                             value={amount}
                             onChangeText={setAmount}
                             placeholder="0.00"
-                            placeholderTextColor={KribTheme.colors.text.secondary}
+                            placeholderTextColor={theme.colors.text.secondary}
                             keyboardType="numeric"
                             returnKeyType="done"
                         />
 
-                        <Text style={styles.label}>Betaald door</Text>
+                        <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Betaald door</Text>
                         <View style={styles.payerSelector}>
                             {members.map(m => (
                                 <TouchableOpacity
                                     key={m.user_id}
-                                    style={[styles.payerChip, payerId === m.user_id && styles.payerChipActive]}
+                                    style={[styles.payerChip, { backgroundColor: theme.colors.inputBackground, borderColor: 'transparent' }, payerId === m.user_id && [styles.payerChipActive, { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]]}
                                     onPress={() => setPayerId(m.user_id)}
                                 >
-                                    <Text style={[styles.payerChipText, payerId === m.user_id && styles.payerChipTextActive]}>
+                                    <Text style={[styles.payerChipText, { color: theme.colors.text.secondary }, payerId === m.user_id && [styles.payerChipTextActive, { color: theme.colors.primary, fontWeight: 'bold' }]]}>
                                         {m.users.username}
                                     </Text>
                                 </TouchableOpacity>
@@ -540,17 +542,17 @@ export default function ListDetail() {
 
                         <View style={styles.modalButtons}>
                             <TouchableOpacity
-                                style={[styles.button, styles.buttonCancel]}
+                                style={[styles.button, styles.buttonCancel, { backgroundColor: theme.colors.text.secondary + '20' }]}
                                 onPress={() => setModalVisible(false)}
                             >
-                                <Text style={styles.buttonTextCancel}>Annuleren</Text>
+                                <Text style={[styles.buttonTextCancel, { color: theme.colors.text.primary }]}>Annuleren</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.button, styles.buttonSave]}
+                                style={[styles.button, styles.buttonSave, { backgroundColor: theme.colors.primary }]}
                                 onPress={addExpense}
                                 disabled={saving}
                             >
-                                {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonTextSave}>Toevoegen</Text>}
+                                {saving ? <ActivityIndicator color="#FFF" /> : <Text style={[styles.buttonTextSave, { color: theme.colors.text.inverse }]}>Toevoegen</Text>}
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -4,6 +4,7 @@ import { supabase } from '../../../services/supabase';
 import { Plus, Trash2, AlertTriangle, ChefHat, Pin, PinOff, GripVertical } from 'lucide-react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { StatusBar } from 'expo-status-bar';
+import { useTheme } from '../../../context/ThemeContext';
 import { KribTheme } from '../../../theme/theme';
 import { DrawerToggleButton } from '@react-navigation/drawer';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -12,6 +13,7 @@ import { Strings } from '../../../constants/strings';
 
 export default function Groceries() {
     const router = useRouter();
+    const { theme, isDarkMode } = useTheme();
     const [items, setItems] = useState<ShoppingItem[]>([]);
     const [newItemName, setNewItemName] = useState('');
     const [loading, setLoading] = useState(true);
@@ -384,17 +386,17 @@ export default function Groceries() {
     ), [toggleItem, togglePin, panicButton, deleteItem]);
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
-            <View style={styles.header}>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
                 <DrawerToggleButton tintColor="#FFFFFF" />
-                <Text style={styles.headerTitle}>{Strings.groceries.title}</Text>
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>{Strings.groceries.title}</Text>
                 <View style={{ flexDirection: 'row', gap: 16 }}>
                     <TouchableOpacity onPress={clearCompleted}>
-                        <Trash2 size={24} color="#FFFFFF" />
+                        <Trash2 size={24} color={theme.colors.onBackground} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push('/(app)/groceries/hall-of-fame')}>
-                        <ChefHat size={24} color="#FFFFFF" />
+                        <ChefHat size={24} color={theme.colors.onBackground} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -404,46 +406,46 @@ export default function Groceries() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={100}
             >
-                <View style={styles.addItemContainer}>
+                <View style={[styles.addItemContainer, { backgroundColor: theme.colors.background }]}>
                     <View style={{ flex: 1 }}>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text.primary, borderColor: theme.colors.border }]}
                             value={newItemName}
                             onChangeText={setNewItemName}
                             placeholder={Strings.groceries.addItemPlaceholder}
-                            placeholderTextColor={KribTheme.colors.text.secondary}
+                            placeholderTextColor={theme.colors.text.secondary}
                             onSubmitEditing={addItem}
                             returnKeyType="done"
                             editable={!submitting}
                         />
                         {/* Suggestion Box */}
                         {filteredSuggestions.length > 0 && (
-                            <View style={styles.suggestionBox}>
+                            <View style={[styles.suggestionBox, { backgroundColor: theme.colors.surface }]}>
                                 {filteredSuggestions.slice(0, 3).map(sugg => (
                                     <TouchableOpacity
                                         key={sugg.id}
-                                        style={styles.suggestionItem}
+                                        style={[styles.suggestionItem, { borderBottomColor: theme.colors.divider }]}
                                         onPress={() => {
                                             setNewItemName(sugg.name);
                                             // Optional: auto-add? Or just fill? Let's fill.
                                             // addItem(); // If we want to auto-add
                                         }}
                                     >
-                                        <Text style={styles.suggestionText}>{sugg.name}</Text>
+                                        <Text style={[styles.suggestionText, { color: theme.colors.text.primary }]}>{sugg.name}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
                         )}
                     </View>
                     <TouchableOpacity
-                        style={[styles.addButton, submitting && styles.addButtonDisabled]}
+                        style={[styles.addButton, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }, submitting && styles.addButtonDisabled]}
                         onPress={addItem}
                         disabled={submitting}
                     >
                         {submitting ? (
-                            <ActivityIndicator size="small" color={KribTheme.colors.primary} />
+                            <ActivityIndicator size="small" color={theme.colors.primary} />
                         ) : (
-                            <Plus size={24} color={KribTheme.colors.primary} />
+                            <Plus size={24} color={theme.colors.primary} />
                         )}
                     </TouchableOpacity>
                 </View>
@@ -477,8 +479,8 @@ export default function Groceries() {
                         ListEmptyComponent={
                             sortedItems.length === 0 ? (
                                 <View style={styles.emptyList}>
-                                    <View style={styles.emptyListCard}>
-                                        <Text style={styles.emptyListText}>{Strings.groceries.emptyList}</Text>
+                                    <View style={[styles.emptyListCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
+                                        <Text style={[styles.emptyListText, { color: theme.colors.text.secondary }]}>{Strings.groceries.emptyList}</Text>
                                     </View>
                                 </View>
                             ) : null
@@ -508,15 +510,18 @@ const GroceryItemRow = ({
     drag?: () => void;
     isActive: boolean;
 }) => {
+    const { theme } = useTheme();
+
     const content = (
         <View style={[
             styles.itemContainer,
-            item.is_pinned && styles.itemContainerPinned,
-            isActive && { backgroundColor: '#F3F4F6' }
+            { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor },
+            item.is_pinned && [styles.itemContainerPinned, { borderLeftColor: theme.colors.primary }],
+            isActive && { backgroundColor: theme.colors.inputBackground }
         ]}>
             {!item.is_pinned && !item.is_checked && drag && (
                 <TouchableOpacity onPressIn={drag} disabled={isActive} style={styles.dragHandle}>
-                    <GripVertical size={20} color={KribTheme.colors.text.secondary} />
+                    <GripVertical size={20} color={theme.colors.text.secondary} />
                 </TouchableOpacity>
             )}
 
@@ -524,10 +529,18 @@ const GroceryItemRow = ({
                 style={styles.checkboxContainer}
                 onPress={() => onToggle(item.id, item.is_checked ?? false)}
             >
-                <View style={[styles.checkbox, item.is_checked && styles.checkboxChecked]}>
-                    {item.is_checked && <Text style={styles.checkmark}>✓</Text>}
+                <View style={[
+                    styles.checkbox,
+                    { borderColor: theme.colors.text.secondary },
+                    item.is_checked && [styles.checkboxChecked, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]
+                ]}>
+                    {item.is_checked && <Text style={[styles.checkmark, { color: theme.colors.text.inverse }]}>✓</Text>}
                 </View>
-                <Text style={[styles.itemText, item.is_checked && styles.itemTextChecked]}>
+                <Text style={[
+                    styles.itemText,
+                    { color: theme.colors.text.primary },
+                    item.is_checked && [styles.itemTextChecked, { color: theme.colors.text.secondary }]
+                ]}>
                     {item.name}
                 </Text>
             </TouchableOpacity>
@@ -535,19 +548,19 @@ const GroceryItemRow = ({
             <View style={styles.actions}>
                 <TouchableOpacity onPress={() => onTogglePin(item.id, item.is_pinned ?? false)} style={styles.actionButton}>
                     {item.is_pinned ? (
-                        <PinOff size={20} color={KribTheme.colors.text.secondary} />
+                        <PinOff size={20} color={theme.colors.text.secondary} />
                     ) : (
-                        <Pin size={20} color={KribTheme.colors.text.secondary} />
+                        <Pin size={20} color={theme.colors.text.secondary} />
                     )}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => onPanic(item.name, item.id)} style={styles.actionButton}>
-                    <AlertTriangle size={20} color={KribTheme.colors.warning} />
+                    <AlertTriangle size={20} color={theme.colors.warning} />
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={() => onDelete(item.id, item.is_pinned ?? false)}
                     style={[styles.actionButton, { opacity: item.is_pinned ? 0.3 : 1 }]}
                 >
-                    <Trash2 size={20} color={KribTheme.colors.error} />
+                    <Trash2 size={20} color={theme.colors.error} />
                 </TouchableOpacity>
             </View>
         </View>
@@ -567,7 +580,6 @@ const GroceryItemRow = ({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: KribTheme.colors.background,
     },
     header: {
         flexDirection: 'row',
@@ -576,7 +588,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 60,
         paddingBottom: 16,
-        backgroundColor: KribTheme.colors.background,
     },
     headerTitle: {
         fontSize: 20,
@@ -586,13 +597,11 @@ const styles = StyleSheet.create({
     addItemContainer: {
         flexDirection: 'row',
         padding: 16,
-        backgroundColor: KribTheme.colors.background,
         marginBottom: 8,
     },
     input: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
-        borderRadius: KribTheme.borderRadius.m,
+        borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 12,
         fontSize: 16,
@@ -600,13 +609,15 @@ const styles = StyleSheet.create({
         color: '#000000',
     },
     addButton: {
-        backgroundColor: '#FFFFFF',
         width: 48,
         height: 48,
         borderRadius: 24,
         justifyContent: 'center',
         alignItems: 'center',
-        ...KribTheme.shadows.card,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
     },
     addButtonDisabled: {
         opacity: 0.6,
@@ -676,11 +687,13 @@ const styles = StyleSheet.create({
         marginTop: 40,
     },
     emptyListCard: {
-        backgroundColor: '#FFFFFF',
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 12,
-        ...KribTheme.shadows.card,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
     },
     emptyListText: {
         color: KribTheme.colors.text.secondary,
@@ -691,7 +704,6 @@ const styles = StyleSheet.create({
         top: 50,
         left: 0,
         right: 12,
-        backgroundColor: '#FFFFFF',
         borderRadius: 8,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
