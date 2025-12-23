@@ -63,7 +63,7 @@ export default function RootLayout() {
                         <StatusBar style="auto" />
                         <Stack screenOptions={{ headerShown: false }}>
                             <Stack.Screen name="index" />
-                            <Stack.Screen name="(auth)" />
+                            <Stack.Screen name="(auth)" options={{ gestureEnabled: false }} />
                             <Stack.Screen name="(app)" options={{ gestureEnabled: false }} />
                             <Stack.Screen name="user-settings" options={{ presentation: 'card' }} />
                             <Stack.Screen name="support" options={{ presentation: 'modal' }} />

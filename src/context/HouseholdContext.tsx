@@ -50,6 +50,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     async function fetchData() {
+        setLoading(true);
         try {
             const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 

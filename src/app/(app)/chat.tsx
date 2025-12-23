@@ -1,6 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Menu, Send, User, Paperclip, Heart } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Keyboard } from 'react-native';
+
+import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { Menu, Send, User, Paperclip, Heart, ArrowDown } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../services/supabase';
@@ -11,9 +12,11 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { decode } from 'base64-arraybuffer';
 import { ImageViewerModal } from '../../components/ImageViewerModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Chat() {
     const navigation = useNavigation();
+    const isFocused = useIsFocused();
     const { theme, isDarkMode } = useTheme();
     const [householdId, setHouseholdId] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
@@ -24,8 +27,12 @@ export default function Chat() {
     const [uploading, setUploading] = useState(false);
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
+    const [lastReadTimestamp, setLastReadTimestamp] = useState<string | null>(null);
+    const [initialScrollIndex, setInitialScrollIndex] = useState<number | null>(null);
     const flatListRef = useRef<FlatList>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [hasScrolledToNew, setHasScrolledToNew] = useState(false);
+    const mountTime = useRef(new Date());
 
     useEffect(() => {
         fetchHouseholdAndUser();
@@ -33,22 +40,64 @@ export default function Chat() {
 
     useEffect(() => {
         if (householdId) {
-            console.log('Fetching messages for household:', householdId);
-            fetchMessages();
+            loadLastReadAndFetchMessages();
+
             const messageSub = subscribeToMessages();
             const reactionSub = subscribeToReactions();
             const presenceSub = subscribeToPresenseAndTyping();
+
+            const keyboardDidShowListener = Keyboard.addListener(
+                'keyboardDidShow',
+                () => {
+                    // Scroll to end when keyboard opens to keep input visible
+                    flatListRef.current?.scrollToEnd({ animated: true });
+                }
+            );
+
             return () => {
                 messageSub.unsubscribe();
                 reactionSub.unsubscribe();
                 presenceSub.unsubscribe();
+                keyboardDidShowListener.remove();
+                updateLastReadTime();
             };
         }
     }, [householdId]);
 
+    useEffect(() => {
+        if (!isFocused && householdId) {
+            updateLastReadTime();
+        }
+    }, [isFocused, householdId]);
+
+    const updateLastReadTime = async () => {
+        if (householdId) {
+            const now = new Date().toISOString();
+            setLastReadTimestamp(now);
+            try {
+                await AsyncStorage.setItem(`last_read_${householdId}`, now);
+            } catch (e) {
+                console.error('Failed to save last read time', e);
+            }
+        }
+    };
+
+    const loadLastReadAndFetchMessages = async () => {
+        if (!householdId) return;
+        setLoading(true);
+        try {
+            const stored = await AsyncStorage.getItem(`last_read_${householdId}`);
+            setLastReadTimestamp(stored);
+            await fetchMessages(stored);
+        } catch (e) {
+            console.error('Failed to load last read time', e);
+            await fetchMessages(null);
+        }
+    };
+
     // ... fetchHouseholdAndUser remains the same ...
 
-    async function fetchMessages() {
+    async function fetchMessages(lastRead: string | null = null) {
         if (!householdId) {
             setLoading(false);
             return;
@@ -73,7 +122,26 @@ export default function Chat() {
 
             if (data) {
                 setMessages(data);
-                setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+
+                // Determine scroll position
+                if (lastRead) {
+                    const firstNewIndex = data.findIndex((msg: any) => new Date(msg.created_at) > new Date(lastRead));
+
+                    if (firstNewIndex !== -1 && firstNewIndex < data.length) {
+                        // Scroll to first new message
+                        console.log('Scrolling to new message at index:', firstNewIndex);
+                        setTimeout(() => {
+                            flatListRef.current?.scrollToIndex({ index: firstNewIndex, viewPosition: 0, animated: true });
+                            setHasScrolledToNew(true);
+                        }, 500);
+                    } else {
+                        // No new messages, scroll to bottom
+                        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+                    }
+                } else {
+                    // First time ever, scroll to bottom
+                    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+                }
             }
         } catch (error) {
             console.error('Error fetching messages:', error);
@@ -437,6 +505,11 @@ export default function Chat() {
         const heartCount = reactions.filter((r: any) => r.reaction === '❤️').length;
         const hasReacted = reactions.some((r: any) => r.user_id === userId && r.reaction === '❤️');
 
+        const isFirstNew = lastReadTimestamp &&
+            new Date(item.created_at) > new Date(lastReadTimestamp) &&
+            new Date(item.created_at) < mountTime.current &&
+            (index === 0 || new Date(messages[index - 1].created_at) <= new Date(lastReadTimestamp));
+
         return (
             <View>
                 {showDateDivider && (
@@ -444,6 +517,15 @@ export default function Chat() {
                         <Text style={styles.dateDividerText}>{getDateLabel(item.created_at)}</Text>
                     </View>
                 )}
+
+                {isFirstNew && (
+                    <View style={styles.newMessagesDivider}>
+                        <View style={styles.newMessagesLine} />
+                        <Text style={styles.newMessagesText}>NIEUWE BERICHTEN</Text>
+                        <View style={styles.newMessagesLine} />
+                    </View>
+                )}
+
                 <View style={[
                     styles.messageRow,
                     isOwnMessage ? styles.ownMessageRow : styles.otherMessageRow
@@ -538,6 +620,9 @@ export default function Chat() {
                             </View>
                         }
                         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                        onScrollToIndexFailed={(info) => {
+                            flatListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
+                        }}
                     />
                 )}
             </View>
@@ -799,5 +884,24 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#FFFFFF',
         fontStyle: 'italic',
+    },
+    newMessagesDivider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 12,
+        paddingHorizontal: 16,
+    },
+    newMessagesLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#EF4444',
+        opacity: 0.5,
+    },
+    newMessagesText: {
+        marginHorizontal: 12,
+        color: '#EF4444',
+        fontSize: 10,
+        fontWeight: 'bold',
+        letterSpacing: 1,
     },
 });
