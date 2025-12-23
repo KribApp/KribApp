@@ -20,6 +20,7 @@ export default function FinancesFeed() {
     // Data
     const [expenses, setExpenses] = useState<any[]>([]);
     const [groupedExpenses, setGroupedExpenses] = useState<any[]>([]);
+    const [lastSettledDate, setLastSettledDate] = useState<Date | null>(null);
     const [householdId, setHouseholdId] = useState<string | null>(null);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<string | null>(null);
@@ -78,6 +79,16 @@ export default function FinancesFeed() {
             if (data) {
                 setExpenses(data);
                 groupExpenses(data);
+
+                // Calculate last settled date
+                const settledExpenses = data.filter(e => e.is_settled && e.settled_at);
+                if (settledExpenses.length > 0) {
+                    const dates = settledExpenses.map(e => new Date(e.settled_at).getTime());
+                    const maxDate = new Date(Math.max(...dates));
+                    setLastSettledDate(maxDate);
+                } else {
+                    setLastSettledDate(null);
+                }
             }
         } catch (error) {
             console.error('Error fetching expenses:', error);
@@ -245,7 +256,7 @@ export default function FinancesFeed() {
                 </View>
             )}
             <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionHeaderText, { color: theme.colors.text.secondary }]}>{section.title}</Text>
+                <Text style={styles.sectionHeaderText}>{section.title}</Text>
             </View>
         </View>
     );
@@ -269,6 +280,11 @@ export default function FinancesFeed() {
                         </TouchableOpacity>
                     </View>
                 </View>
+                {lastSettledDate && (
+                    <Text style={[styles.lastSettledText, { color: 'rgba(255, 255, 255, 0.7)' }]}>
+                        Laatst verrekend: {lastSettledDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                )}
             </View>
 
             {loading ? (
@@ -284,7 +300,7 @@ export default function FinancesFeed() {
                     onRefresh={handleRefresh}
                     ListEmptyComponent={
                         <View style={styles.empty}>
-                            <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>Nog geen uitgaven. Voeg er een toe!</Text>
+                            <Text style={[styles.emptyText, { color: theme.colors.onBackground }]}>Nog geen uitgaven. Voeg er een toe!</Text>
                         </View>
                     }
                     stickySectionHeadersEnabled={false}
@@ -338,6 +354,12 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         color: '#FFFFFF',
+    },
+    lastSettledText: {
+        fontSize: 12,
+        marginLeft: 48, // Align with title (roughly) or center? Let's align with content flow.
+        marginTop: 4,
+        opacity: 0.8,
     },
     list: {
         padding: 16,

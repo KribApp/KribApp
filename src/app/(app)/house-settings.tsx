@@ -237,7 +237,7 @@ export default function HouseSettings() {
 
                     {/* SECTION: GENERAL */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.secondary }]}>ALGEMEEN</Text>
+                        <Text style={[styles.sectionHeaderText, { color: 'rgba(255,255,255,0.7)' }]}>ALGEMEEN</Text>
                     </View>
                     <View style={[styles.card, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                         <View style={styles.photoContainer}>
@@ -300,7 +300,7 @@ export default function HouseSettings() {
 
                     {/* SECTION: LOCATIE */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.secondary }]}>LOCATIE (ALLEEN LEZEN)</Text>
+                        <Text style={[styles.sectionHeaderText, { color: 'rgba(255,255,255,0.7)' }]}>LOCATIE (ALLEEN LEZEN)</Text>
                     </View>
                     <View style={[styles.card, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                         <View style={styles.inputGroup}>
@@ -332,7 +332,7 @@ export default function HouseSettings() {
 
                     {/* SECTION: CONFIG */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.secondary }]}>EETLIJST CONFIGURATIE</Text>
+                        <Text style={[styles.sectionHeaderText, { color: 'rgba(255,255,255,0.7)' }]}>EETLIJST CONFIGURATIE</Text>
                     </View>
                     <View style={[styles.card, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                         <View style={styles.inputGroup}>
@@ -416,7 +416,7 @@ export default function HouseSettings() {
 
                     {/* SECTION: INVITE */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.secondary }]}>UITNODIGINGSCODE</Text>
+                        <Text style={[styles.sectionHeaderText, { color: 'rgba(255,255,255,0.7)' }]}>UITNODIGINGSCODE</Text>
                     </View>
                     <View style={[styles.card, { alignItems: 'center', backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                         <Text style={[styles.inviteCode, { color: theme.colors.primary }]}>{inviteCode}</Text>

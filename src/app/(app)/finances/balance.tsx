@@ -8,17 +8,23 @@ import { ArrowLeft, Wallet } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
+
 export default function BalancePage() {
     const router = useRouter();
     const { theme, isDarkMode } = useTheme();
     const [loading, setLoading] = useState(true);
     const [balances, setBalances] = useState<any[]>([]);
     const [totalSpent, setTotalSpent] = useState(0);
+    const [lastSettledDate, setLastSettledDate] = useState<Date | null>(null);
     const [householdId, setHouseholdId] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchData();
+        }, [])
+    );
 
     const fetchData = async () => {
         try {
@@ -47,7 +53,7 @@ export default function BalancePage() {
 
             const { data: expenses } = await supabase
                 .from('expenses')
-                .select('id, amount, payer_user_id')
+                .select('id, amount, payer_user_id, is_settled, settled_at')
                 .eq('household_id', member.household_id);
 
             // Fetch members to map names
@@ -110,6 +116,30 @@ export default function BalancePage() {
                 // Sort: Positive (Credit) first
                 balanceList.sort((a, b) => b.amount - a.amount);
                 setBalances(balanceList);
+
+                // Match fetch for notifications to find reset events
+                const { data: resetNotifications } = await supabase
+                    .from('notifications')
+                    .select('created_at')
+                    .eq('household_id', member.household_id)
+                    .eq('title', 'Huisrekening verrekend')
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                // Calculate Last Settled Date
+                const settledExpenses = expenses.filter(e => e.is_settled && e.settled_at);
+                const dates = settledExpenses.map(e => new Date(e.settled_at).getTime());
+
+                if (resetNotifications && resetNotifications.length > 0) {
+                    dates.push(new Date(resetNotifications[0].created_at).getTime());
+                }
+
+                if (dates.length > 0) {
+                    const maxDate = new Date(Math.max(...dates));
+                    setLastSettledDate(maxDate);
+                } else {
+                    setLastSettledDate(null);
+                }
             }
 
         } catch (error) {
@@ -154,8 +184,14 @@ export default function BalancePage() {
             </View>
 
             <View style={[styles.summary, { borderBottomColor: theme.colors.border }]}>
-                <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>Totaal Uitgegeven</Text>
+                <Text style={[styles.summaryLabel, { color: 'rgba(255, 255, 255, 0.7)' }]}>Totaal Uitgegeven</Text>
                 <Text style={[styles.summaryAmount, { color: theme.colors.onBackground }]}>€ {totalSpent.toFixed(2)}</Text>
+                <Text style={[styles.lastSettledText, { color: 'rgba(255, 255, 255, 0.7)' }]}>
+                    Laatst verrekend: {lastSettledDate
+                        ? lastSettledDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+                        : 'Nog nooit'
+                    }
+                </Text>
             </View>
 
             {loading ? (
@@ -209,6 +245,11 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         color: '#FFFFFF',
+    },
+    lastSettledText: {
+        fontSize: 12,
+        marginTop: 8,
+        opacity: 0.8,
     },
     list: {
         padding: 16,

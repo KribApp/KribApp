@@ -221,7 +221,7 @@ export default function TurfOverview() {
                             contentContainerStyle={styles.listContainer}
                             ListEmptyComponent={
                                 <View style={styles.emptyState}>
-                                    <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>Nog geen lijsten. Maak er een aan!</Text>
+                                    <Text style={styles.emptyText}>Nog geen lijsten. Maak er een aan!</Text>
                                 </View>
                             }
                         />

@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyText: {
-        color: KribTheme.colors.text.secondary,
+        color: '#FFFFFF',
         fontSize: 16,
         textAlign: 'center',
     },

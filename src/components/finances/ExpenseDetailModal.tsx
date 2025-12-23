@@ -60,13 +60,20 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
             const consumedAmount = share ? share.owed_amount : 0;
             const paidAmount = isPayer ? expense.amount : 0;
 
+            // Calculate net impact
             const netImpact = paidAmount - consumedAmount;
 
-            // Skip if no impact (0.00)
-            if (Math.abs(netImpact) < 0.01) return null;
+            // Show if user is payer OR has a share (even if net is 0)
+            const hasShare = share && share.owed_amount > 0;
+            if (!isPayer && !hasShare) return null;
 
-            const isPositive = netImpact > 0;
-            const color = isPositive ? KribTheme.colors.success : KribTheme.colors.error;
+            const isPositive = netImpact > 0.001;
+            const isNegative = netImpact < -0.001;
+
+            // Format color: Green for receive, Red for pay, Gray for neutral (0)
+            let color = KribTheme.colors.text.secondary;
+            if (isPositive) color = KribTheme.colors.success;
+            if (isNegative) color = KribTheme.colors.error;
 
             return (
                 <View key={member.user_id} style={styles.impactRow}>
@@ -198,8 +205,6 @@ const styles = StyleSheet.create({
     amount: {
         fontSize: 32,
         fontWeight: '900',
-        color: KribTheme.colors.primary,
-        marginBottom: 8,
         // Make it pop against dark bg if needed, or stick to primary
         color: '#FFFFFF',
     },
@@ -219,7 +224,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     impactList: {
-        backgroundColor: KribTheme.colors.surface,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderRadius: 16,
         padding: 16,
     },
@@ -237,23 +242,23 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: 'rgba(93, 95, 239, 0.1)',
+        backgroundColor: KribTheme.colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
     },
     avatarText: {
-        color: KribTheme.colors.primary,
+        color: '#FFFFFF',
         fontWeight: 'bold',
     },
     username: {
         fontSize: 16,
-        color: KribTheme.colors.text.primary,
+        color: '#FFFFFF',
         fontWeight: '500',
     },
     payerBadge: {
         fontSize: 12,
-        color: KribTheme.colors.text.secondary,
+        color: 'rgba(255, 255, 255, 0.6)',
         fontStyle: 'italic',
     },
     impactAmount: {
@@ -261,7 +266,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     receiptContainer: {
-        backgroundColor: KribTheme.colors.surface,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderRadius: 16,
         padding: 8,
         height: 300,

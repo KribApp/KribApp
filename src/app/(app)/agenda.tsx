@@ -78,11 +78,28 @@ export default function Agenda() {
         // 3. Merge data
         const merged = members.map(member => {
             const record = records?.find(r => r.user_id === member.user_id);
+            let status = record?.status || 'PENDING';
+
+            // Apply default based on household config if no record exists
+            if (status === 'PENDING') {
+                // Check if it is a new day (after 00:00) for the selected date
+                // Since selectedDate is YYYY-MM-DD, we can assume it represents the "day"
+                // The requirement: "If it is switched on, the as soon as it is a new day (so after 00:00) everyone... will be set to 'Mee eten'"
+                // We can simply strictly apply the default if status is missing.
+                if (household?.config_no_response_action === 'EAT') {
+                    status = 'EATING';
+                }
+                // If default is NO_EAT, it effectively remains PENDING (or we could map it to NOT_EATING, but PENDING is clearer UI wise until they decide)
+                // User request says: "except the people who have already set their status to niet mee eten". 
+                // So explicit 'NOT_EATING' is respected (record exists). 
+                // Missing record => Default.
+            }
+
             return {
                 user_id: member.user_id,
                 // @ts-ignore
                 username: member.users?.username || 'Unknown',
-                status: record?.status || 'PENDING',
+                status: status,
                 record_id: record?.id
             };
         });
@@ -483,7 +500,7 @@ const styles = StyleSheet.create({
     segmentText: {
         fontSize: 14,
         fontWeight: '600',
-        color: KribTheme.colors.text.secondary,
+        color: 'rgba(255, 255, 255, 0.6)',
     },
     segmentDivider: {
         width: 1,

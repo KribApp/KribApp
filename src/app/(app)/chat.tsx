@@ -534,7 +534,7 @@ export default function Chat() {
                         contentContainerStyle={styles.chatContent}
                         ListEmptyComponent={
                             <View style={styles.emptyChat}>
-                                <Text style={[styles.emptyChatText, { color: theme.colors.text.secondary }]}>Nog geen berichten vandaag.</Text>
+                                <Text style={styles.emptyChatText}>Nog geen berichten vandaag.</Text>
                             </View>
                         }
                         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}

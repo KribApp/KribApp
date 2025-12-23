@@ -1,17 +1,18 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ArrowLeft, LogOut, User, Calendar, Moon, Sun, Trash2, Mail, Camera } from 'lucide-react-native';
-import { KribTheme } from '../../theme/theme';
-import { supabase } from '../../services/supabase';
+import { ArrowLeft, LogOut, User, Calendar, Moon, Sun, Trash2, Mail, Camera, Flag, LifeBuoy, Shield, ChevronRight } from 'lucide-react-native';
+import { Linking } from 'react-native';
+import { KribTheme } from '../theme/theme';
+import { supabase } from '../services/supabase';
 import { useEffect, useState, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Image } from 'expo-image';
-import { useHousehold } from '../../context/HouseholdContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useHousehold } from '../context/HouseholdContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function UserSettings() {
     const router = useRouter();
@@ -181,6 +182,10 @@ export default function UserSettings() {
         );
     }
 
+    const handleReportContent = () => {
+        Linking.openURL('mailto:info@kribapp.com?subject=Rapporteer Inhoud&body=Beschrijf hier de inhoud die je wilt rapporteren:');
+    };
+
     async function handleDeleteAccount() {
         Alert.alert(
             'Account Verwijderen',
@@ -298,7 +303,57 @@ export default function UserSettings() {
                         </View>
                     </View>
 
-                    {/* SECTION 3: ACCOUNT */}
+                    {/* SECTION 3: SUPPORT & SAFETY */}
+                    <View style={styles.sectionHeaderContainer}>
+                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.inverse, opacity: 0.7 }]}>ONDERSTEUNING & VEILIGHEID</Text>
+                    </View>
+
+                    <View style={[styles.card, { backgroundColor: theme.colors.surface, padding: 0, overflow: 'hidden' }]}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={handleReportContent}
+                        >
+                            <View style={styles.menuItemLeft}>
+                                <View style={[styles.iconCircle, { backgroundColor: '#FEF2F2' }]}>
+                                    <Flag size={20} color={theme.colors.error} />
+                                </View>
+                                <Text style={[styles.menuItemText, { color: theme.colors.text.primary }]}>Rapporteer inhoud</Text>
+                            </View>
+                            <ChevronRight size={20} color={theme.colors.text.secondary} />
+                        </TouchableOpacity>
+
+                        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => router.push('/support')}
+                        >
+                            <View style={styles.menuItemLeft}>
+                                <View style={[styles.iconCircle, { backgroundColor: '#EEF2FF' }]}>
+                                    <LifeBuoy size={20} color={theme.colors.primary} />
+                                </View>
+                                <Text style={[styles.menuItemText, { color: theme.colors.text.primary }]}>Help & Support</Text>
+                            </View>
+                            <ChevronRight size={20} color={theme.colors.text.secondary} />
+                        </TouchableOpacity>
+
+                        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => router.push('/privacy')}
+                        >
+                            <View style={styles.menuItemLeft}>
+                                <View style={[styles.iconCircle, { backgroundColor: '#ECFDF5' }]}>
+                                    <Shield size={20} color="#10B981" />
+                                </View>
+                                <Text style={[styles.menuItemText, { color: theme.colors.text.primary }]}>Privacybeleid</Text>
+                            </View>
+                            <ChevronRight size={20} color={theme.colors.text.secondary} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* SECTION 4: ACCOUNT */}
                     <View style={styles.sectionHeaderContainer}>
                         <Text style={[styles.sectionHeaderText, { color: theme.colors.text.inverse, opacity: 0.7 }]}>ACCOUNT</Text>
                     </View>
@@ -491,7 +546,22 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
-        backgroundColor: '#F3F4F6',
-        marginLeft: 52,
+        marginLeft: 56,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+    },
+    menuItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    menuItemText: {
+        fontSize: 16,
+        fontWeight: '500',
     },
 });

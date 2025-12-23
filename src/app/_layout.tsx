@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 import { HouseholdProvider } from '../context/HouseholdContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import { StatusBar } from 'expo-status-bar';
@@ -59,7 +59,14 @@ export default function RootLayout() {
             <ThemeProvider>
                 <HouseholdProvider>
                     <StatusBar style="auto" />
-                    <Slot />
+                    <Stack screenOptions={{ headerShown: false }}>
+                        <Stack.Screen name="index" />
+                        <Stack.Screen name="(auth)" />
+                        <Stack.Screen name="(app)" options={{ gestureEnabled: false }} />
+                        <Stack.Screen name="user-settings" options={{ presentation: 'card' }} />
+                        <Stack.Screen name="support" options={{ presentation: 'modal' }} />
+                        <Stack.Screen name="privacy" options={{ presentation: 'modal' }} />
+                    </Stack>
                 </HouseholdProvider>
             </ThemeProvider>
         </SafeAreaProvider>

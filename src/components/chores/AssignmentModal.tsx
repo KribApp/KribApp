@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: KribTheme.colors.background,
+        borderBottomColor: KribTheme.colors.border,
         backgroundColor: KribTheme.colors.surface,
     },
     selectionItemText: {

@@ -37,7 +37,7 @@ export default function CustomDrawerContent(props: any) {
                             style={styles.settingsButton}
                             onPress={() => {
                                 props.navigation.closeDrawer();
-                                router.push('/(app)/user-settings');
+                                router.push('/user-settings');
                             }}
                         >
                             <Settings size={20} color={theme.colors.primary} />

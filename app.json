@@ -2,7 +2,7 @@
   "expo": {
     "name": "Krib",
     "slug": "krib",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -19,7 +19,9 @@
         "applinks:krib-app.vercel.app"
       ],
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "This app uses the camera to let you take a profile picture or household photo.",
+        "NSPhotoLibraryUsageDescription": "This app accesses your photos to let you select a profile picture or household photo."
       }
     },
     "android": {

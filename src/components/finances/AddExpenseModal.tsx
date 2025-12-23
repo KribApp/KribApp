@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     content: {
-        backgroundColor: KribTheme.colors.background,
+        backgroundColor: KribTheme.colors.primary,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         height: '90%',
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
         padding: 24,
         borderTopWidth: 1,
         borderTopColor: 'rgba(255,255,255,0.05)',
-        backgroundColor: KribTheme.colors.background,
+        backgroundColor: KribTheme.colors.primary,
         paddingBottom: 40,
     },
     saveButton: {

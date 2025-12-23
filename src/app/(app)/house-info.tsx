@@ -35,6 +35,8 @@ export default function HouseInfo() {
     // Members Section
     const [members, setMembers] = useState<any[]>([]);
 
+
+
     useEffect(() => {
         fetchHouseholdAndUser();
     }, []);
@@ -317,6 +319,8 @@ export default function HouseInfo() {
                         </View>
                     </View>
 
+
+
                     {/* Leden Section */}
                     <View style={styles.section}>
                         <View style={styles.sectionTitleContainer}>
@@ -505,4 +509,5 @@ const styles = StyleSheet.create({
     roleTextMember: {
         color: '#374151',
     },
+
 });
