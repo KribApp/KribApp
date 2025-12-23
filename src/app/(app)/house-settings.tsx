@@ -13,6 +13,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Image } from 'expo-image';
 import { Strings } from '../../constants/strings';
+import { DiningService } from '../../services/DiningService';
 
 export default function HouseSettings() {
     const router = useRouter();
@@ -405,8 +406,26 @@ export default function HouseSettings() {
                             <Switch
                                 trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
                                 thumbColor={noResponseAction === 'EAT' ? theme.colors.surface : "#f4f3f4"}
-                                onValueChange={(val) => {
-                                    if (isAdmin) setNoResponseAction(val ? 'EAT' : 'NO_EAT');
+                                onValueChange={async (val) => {
+                                    if (!isAdmin) return;
+
+                                    const newValue = val ? 'EAT' : 'NO_EAT';
+                                    setNoResponseAction(newValue);
+
+                                    // If toggled ON, immediately apply "Mee-eten" for today for missing members
+                                    if (newValue === 'EAT' && householdId) {
+                                        try {
+                                            const count = await DiningService.applyDefaultEatingForToday(householdId);
+                                            if (count > 0) {
+                                                Alert.alert(
+                                                    "Eetlijst Bijgewerkt",
+                                                    `${count} lid/leden zijn op 'Mee-eten' gezet voor vandaag.`
+                                                );
+                                            }
+                                        } catch (err) {
+                                            console.error("Failed to auto-set eating status:", err);
+                                        }
+                                    }
                                 }}
                                 value={noResponseAction === 'EAT'}
                                 disabled={!isAdmin}

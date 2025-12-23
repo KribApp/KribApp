@@ -4,14 +4,14 @@ import { useFocusEffect } from 'expo-router';
 import { Alert } from 'react-native';
 import { useHousehold } from '../context/HouseholdContext';
 import { Notification } from '../types/models';
+import { toZonedTime, format } from 'date-fns-tz';
+import { subHours } from 'date-fns';
 
 export function useDashboardData() {
     const { household, loading: contextLoading } = useHousehold();
     const [loading, setLoading] = useState(true);
     const [alerts, setAlerts] = useState<Notification[]>([]);
     const [eatingCount, setEatingCount] = useState<number | null>(null);
-
-    const [activityLogs, setActivityLogs] = useState<any[]>([]);
 
     const householdId = household?.id || null;
     const householdName = household?.name || 'Laden...';
@@ -22,7 +22,6 @@ export function useDashboardData() {
             if (householdId) {
                 fetchDiningStatus();
                 fetchAlerts();
-                fetchActivityLogs();
             }
         }, [householdId])
     );
@@ -47,26 +46,7 @@ export function useDashboardData() {
         }
     }, [householdId]);
 
-    async function fetchActivityLogs() {
-        if (!householdId) return;
 
-        const { data, error } = await supabase
-            .from('activity_logs')
-            .select(`
-                *,
-                users (
-                    username,
-                    profile_picture_url
-                )
-            `)
-            .eq('household_id', householdId)
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-        if (data) {
-            setActivityLogs(data);
-        }
-    }
 
     async function fetchAlerts() {
         if (!householdId) return;
@@ -86,7 +66,14 @@ export function useDashboardData() {
 
     async function fetchDiningStatus() {
         if (!householdId) return;
-        const today = new Date().toISOString().split('T')[0];
+
+        // Calculate date based on timezone (same logic as Agenda)
+        // Default to Europe/Amsterdam if household timezone not loaded yet
+        const timezone = household?.timezone || 'Europe/Amsterdam';
+        const now = new Date();
+        const zonedNow = toZonedTime(now, timezone);
+        const effectiveDate = subHours(zonedNow, 1); // Shift back 1 hour handling
+        const today = format(effectiveDate, 'yyyy-MM-dd', { timeZone: timezone });
 
         const { count, error } = await supabase
             .from('dining_attendance')
@@ -183,7 +170,6 @@ export function useDashboardData() {
         alerts,
         eatingCount,
         hasHousehold: !!householdId,
-        activityLogs,
         resolveAlert
     };
 }

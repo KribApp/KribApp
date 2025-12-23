@@ -5,8 +5,8 @@ import { Plus, Wallet, FileText, ArrowRight, TrendingUp, RotateCcw } from 'lucid
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../../../context/ThemeContext';
 import { KribTheme } from '../../../theme/theme';
-import { DrawerToggleButton } from '@react-navigation/drawer';
 import { useRouter } from 'expo-router';
+import { DrawerToggleButton } from '@react-navigation/drawer';
 import AddExpenseModal from '../../../components/finances/AddExpenseModal';
 import ExpenseDetailModal from '../../../components/finances/ExpenseDetailModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -281,7 +281,7 @@ export default function FinancesFeed() {
                     </View>
                 </View>
                 {lastSettledDate && (
-                    <Text style={[styles.lastSettledText, { color: 'rgba(255, 255, 255, 0.7)' }]}>
+                    <Text style={[styles.lastSettledText, { color: theme.colors.text.secondary }]}>
                         Laatst verrekend: {lastSettledDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
                     </Text>
                 )}

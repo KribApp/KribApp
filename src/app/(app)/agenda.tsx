@@ -210,6 +210,28 @@ export default function Agenda() {
     async function setStatus(status: 'EATING' | 'NOT_EATING') {
         if (!householdId || !userId) return;
 
+        // Check deadline
+        if (deadline) {
+            const now = new Date();
+            const [hours, minutes] = deadline.split(':').map(Number);
+            const deadlineDate = new Date();
+            deadlineDate.setHours(hours, minutes, 0, 0);
+
+            // Compare only if selected date is TODAY
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const selected = new Date(selectedDate);
+            selected.setHours(0, 0, 0, 0);
+
+            if (selected.getTime() === today.getTime() && now > deadlineDate) {
+                Alert.alert(
+                    "Deadline Verstreken",
+                    `Je kunt je status voor vandaag niet meer wijzigen na ${deadline.substring(0, 5)}.`
+                );
+                return;
+            }
+        }
+
         // Optimistic update
         const previousAttendance = [...attendance];
         setAttendance(prev => prev.map(item => {

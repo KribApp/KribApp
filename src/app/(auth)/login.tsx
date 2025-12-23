@@ -84,7 +84,7 @@ export default function Login() {
                     <StatusBar style="light" />
                     <View style={styles.header}>
                         <Image
-                            source={require('../../../assets/krib-logo.png')}
+                            source={require('../../../assets/krib-logo-v2.png')}
                             style={styles.logo}
                             resizeMode="contain"
                         />
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     },
     logo: {
         width: 250,
-        height: 250,
+        height: 133,
         marginBottom: 24,
     },
     title: {

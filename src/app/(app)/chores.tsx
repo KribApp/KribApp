@@ -5,7 +5,6 @@ import { List } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../../context/ThemeContext';
 import { KribTheme } from '../../theme/theme';
-import { DrawerToggleButton } from '@react-navigation/drawer';
 import { useChoresData } from '../../hooks/useChoresData';
 import { CalendarView } from '../../components/chores/CalendarView';
 import { DayDetail } from '../../components/chores/DayDetail';
@@ -248,7 +247,7 @@ export default function Huishouden() {
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <StatusBar style={isDarkMode ? "light" : "light"} />
             <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-                <DrawerToggleButton tintColor={theme.colors.onBackground} />
+                {/* Back button handled by Stack or custom back if needed, but for now simple header title left aligned or centered */}
                 <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Huishouden</Text>
                 <TouchableOpacity
                     style={styles.taskListButton}

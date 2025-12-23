@@ -386,12 +386,12 @@ export default function TurfDetail() {
                 onRequestClose={() => setShowCustomModal(false)}
             >
                 <View style={[styles.customModalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
-                    <View style={[styles.customModalContent, { backgroundColor: theme.colors.surface }]}>
+                    <View style={[styles.customModalContent, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                         <Text style={[styles.customModalTitle, { color: theme.colors.text.primary }]}>Aantal toevoegen</Text>
                         <Text style={[styles.customModalSubtitle, { color: theme.colors.text.secondary }]}>Huidig: {selectedCounter?.count}</Text>
 
                         <TextInput
-                            style={[styles.customInput, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text.primary }]}
+                            style={[styles.customInput, { backgroundColor: theme.colors.background, color: theme.colors.text.primary, borderColor: theme.colors.border }]}
                             value={customAmount}
                             onChangeText={setCustomAmount}
                             placeholder="Bijv. 12 (of -5)"
@@ -618,24 +618,21 @@ const styles = StyleSheet.create({
     customModalTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#111827',
         marginBottom: 8,
         textAlign: 'center',
     },
     customModalSubtitle: {
         fontSize: 14,
-        color: '#6B7280',
         marginBottom: 16,
         textAlign: 'center',
     },
     customInput: {
-        backgroundColor: '#F3F4F6',
         borderRadius: 8,
         padding: 12,
         fontSize: 16,
         textAlign: 'center',
         marginBottom: 24,
-        color: '#000000',
+        borderWidth: 1,
     },
     customModalActions: {
         flexDirection: 'row',
@@ -645,22 +642,18 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 12,
         borderRadius: 8,
-        backgroundColor: '#F3F4F6',
         alignItems: 'center',
     },
     customCancelText: {
-        color: '#374151',
         fontWeight: '600',
     },
     customConfirmButton: {
         flex: 1,
         padding: 12,
         borderRadius: 8,
-        backgroundColor: KribTheme.colors.primary,
         alignItems: 'center',
     },
     customConfirmText: {
-        color: '#FFFFFF',
         fontWeight: '600',
     },
 });

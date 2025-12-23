@@ -21,7 +21,7 @@ export function DiningStatusCard({ eatingCount }: DiningStatusCardProps) {
             <View>
                 <Text style={[styles.statusTitle, { color: theme.colors.text.secondary }]}>Eten vanavond</Text>
                 <Text style={[styles.statusValue, { color: theme.colors.text.primary }]}>
-                    {eatingCount !== null ? `${eatingCount} eters` : 'Laden...'}
+                    {eatingCount !== null ? (eatingCount === 0 ? 'Niemand' : eatingCount === 1 ? '1 eter' : `${eatingCount} eters`) : 'Laden...'}
                 </Text>
             </View>
         </TouchableOpacity>

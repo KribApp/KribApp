@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack } from 'expo-router';
 import { HouseholdProvider } from '../context/HouseholdContext';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -55,20 +56,22 @@ export default function RootLayout() {
     };
 
     return (
-        <SafeAreaProvider>
-            <ThemeProvider>
-                <HouseholdProvider>
-                    <StatusBar style="auto" />
-                    <Stack screenOptions={{ headerShown: false }}>
-                        <Stack.Screen name="index" />
-                        <Stack.Screen name="(auth)" />
-                        <Stack.Screen name="(app)" options={{ gestureEnabled: false }} />
-                        <Stack.Screen name="user-settings" options={{ presentation: 'card' }} />
-                        <Stack.Screen name="support" options={{ presentation: 'modal' }} />
-                        <Stack.Screen name="privacy" options={{ presentation: 'modal' }} />
-                    </Stack>
-                </HouseholdProvider>
-            </ThemeProvider>
-        </SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaProvider>
+                <ThemeProvider>
+                    <HouseholdProvider>
+                        <StatusBar style="auto" />
+                        <Stack screenOptions={{ headerShown: false }}>
+                            <Stack.Screen name="index" />
+                            <Stack.Screen name="(auth)" />
+                            <Stack.Screen name="(app)" options={{ gestureEnabled: false }} />
+                            <Stack.Screen name="user-settings" options={{ presentation: 'card' }} />
+                            <Stack.Screen name="support" options={{ presentation: 'modal' }} />
+                            <Stack.Screen name="privacy" options={{ presentation: 'modal' }} />
+                        </Stack>
+                    </HouseholdProvider>
+                </ThemeProvider>
+            </SafeAreaProvider>
+        </GestureHandlerRootView>
     );
 }

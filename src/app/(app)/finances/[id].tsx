@@ -488,17 +488,16 @@ export default function ListDetail() {
 
                         <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Beschrijving</Text>
                         <TextInput
-                            style={[styles.input, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text.primary }]}
+                            style={[styles.input, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text.primary, borderColor: theme.colors.border }]}
                             value={description}
                             onChangeText={setDescription}
                             placeholder="Wat heb je gekocht?"
                             placeholderTextColor={theme.colors.text.secondary}
-
                             returnKeyType="next"
                         />
 
                         <TouchableOpacity
-                            style={styles.receiptButton}
+                            style={[styles.receiptButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}
                             onPress={pickReceipt}
                         >
                             {receipt ? (
@@ -516,7 +515,7 @@ export default function ListDetail() {
 
                         <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Bedrag (€)</Text>
                         <TextInput
-                            style={[styles.input, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text.primary }]}
+                            style={[styles.input, { backgroundColor: theme.colors.inputBackground, color: theme.colors.text.primary, borderColor: theme.colors.border }]}
                             value={amount}
                             onChangeText={setAmount}
                             placeholder="0.00"
@@ -530,7 +529,7 @@ export default function ListDetail() {
                             {members.map(m => (
                                 <TouchableOpacity
                                     key={m.user_id}
-                                    style={[styles.payerChip, { backgroundColor: theme.colors.inputBackground, borderColor: 'transparent' }, payerId === m.user_id && [styles.payerChipActive, { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]]}
+                                    style={[styles.payerChip, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.border }, payerId === m.user_id && [styles.payerChipActive, { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]]}
                                     onPress={() => setPayerId(m.user_id)}
                                 >
                                     <Text style={[styles.payerChipText, { color: theme.colors.text.secondary }, payerId === m.user_id && [styles.payerChipTextActive, { color: theme.colors.primary, fontWeight: 'bold' }]]}>
@@ -766,23 +765,21 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#111827',
         marginBottom: 24,
         textAlign: 'center',
     },
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#374151',
         marginBottom: 8,
     },
     input: {
-        backgroundColor: '#F3F4F6',
         borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 12,
         fontSize: 16,
         marginBottom: 16,
+        borderWidth: 1,
     },
     payerSelector: {
         flexDirection: 'row',
@@ -794,76 +791,66 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
-        backgroundColor: '#F3F4F6',
         borderWidth: 1,
-        borderColor: 'transparent',
     },
     payerChipActive: {
-        backgroundColor: '#EFF6FF',
-        borderColor: '#2563EB',
+        borderWidth: 1,
     },
     payerChipText: {
         fontSize: 14,
-        color: '#4B5563',
+        fontWeight: '500',
     },
     payerChipTextActive: {
-        color: '#2563EB',
-        fontWeight: '600',
+        fontWeight: 'bold',
+    },
+    receiptButton: {
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    receiptPreview: {
+        alignItems: 'center',
+        gap: 8,
+    },
+    receiptPlaceholder: {
+        alignItems: 'center',
+        gap: 8,
+    },
+    receiptImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 8,
+        marginBottom: 8,
+    },
+    receiptText: {
+        fontSize: 12,
     },
     modalButtons: {
         flexDirection: 'row',
         gap: 12,
+        marginTop: 16,
     },
     button: {
         flex: 1,
-        padding: 16,
-        borderRadius: 12,
+        paddingVertical: 12,
+        borderRadius: 8,
         alignItems: 'center',
+        justifyContent: 'center',
     },
     buttonCancel: {
-        backgroundColor: '#F3F4F6',
+        // Static properties if any
     },
     buttonSave: {
-        backgroundColor: '#2563EB',
+        // Static properties if any
     },
     buttonTextCancel: {
-        color: '#4B5563',
         fontWeight: '600',
     },
     buttonTextSave: {
-        color: '#FFFFFF',
         fontWeight: '600',
-    },
-    receiptButton: {
-        backgroundColor: KribTheme.colors.background,
-        borderRadius: 12,
-        marginBottom: 16,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: KribTheme.colors.border,
-        borderStyle: 'dashed',
-    },
-    receiptPlaceholder: {
-        padding: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-    },
-    receiptPreview: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 8,
-        gap: 12,
-        backgroundColor: '#F0F9FF',
-    },
-    receiptImage: {
-        width: 40,
-        height: 40,
-        borderRadius: 4,
-    },
-    receiptText: {
-        color: KribTheme.colors.text.secondary,
-        fontSize: 14,
     },
 });

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { X, FileText, User } from 'lucide-react-native';
-import { KribTheme } from '../../theme/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../services/supabase';
 
 interface ExpenseDetailModalProps {
@@ -11,6 +11,7 @@ interface ExpenseDetailModalProps {
 }
 
 export default function ExpenseDetailModal({ visible, onClose, expense }: ExpenseDetailModalProps) {
+    const { theme } = useTheme();
     const [loading, setLoading] = useState(true);
     const [shares, setShares] = useState<any[]>([]);
     const [members, setMembers] = useState<any[]>([]);
@@ -71,20 +72,20 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
             const isNegative = netImpact < -0.001;
 
             // Format color: Green for receive, Red for pay, Gray for neutral (0)
-            let color = KribTheme.colors.text.secondary;
-            if (isPositive) color = KribTheme.colors.success;
-            if (isNegative) color = KribTheme.colors.error;
+            let color = theme.colors.text.secondary;
+            if (isPositive) color = theme.colors.success;
+            if (isNegative) color = theme.colors.error;
 
             return (
                 <View key={member.user_id} style={styles.impactRow}>
                     <View style={styles.userContainer}>
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarText}>
+                        <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
+                            <Text style={[styles.avatarText, { color: theme.colors.text.inverse }]}>
                                 {userData?.username?.charAt(0) || '?'}
                             </Text>
                         </View>
-                        <Text style={styles.username}>{userData?.username || 'Onbekend'}</Text>
-                        {isPayer && <Text style={styles.payerBadge}> (Betaald)</Text>}
+                        <Text style={[styles.username, { color: theme.colors.text.primary }]}>{userData?.username || 'Onbekend'}</Text>
+                        {isPayer && <Text style={[styles.payerBadge, { color: theme.colors.text.secondary }]}> (Betaald)</Text>}
                     </View>
                     <Text style={[styles.impactAmount, { color }]}>
                         {isPositive ? '+' : ''}€ {netImpact.toFixed(2)}
@@ -102,20 +103,20 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
             onRequestClose={onClose}
         >
             <View style={styles.container}>
-                <View style={styles.content}>
+                <View style={[styles.content, { backgroundColor: theme.colors.surface }]}>
                     <View style={styles.header}>
-                        <Text style={styles.title}>Details</Text>
-                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                            <X size={24} color="#FFFFFF" />
+                        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Details</Text>
+                        <TouchableOpacity onPress={onClose} style={[styles.closeButton, { backgroundColor: theme.colors.text.secondary + '20' }]}>
+                            <X size={24} color={theme.colors.text.primary} />
                         </TouchableOpacity>
                     </View>
 
                     <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
                         {/* Main Info */}
                         <View style={styles.mainInfo}>
-                            <Text style={styles.description}>{expense.description}</Text>
-                            <Text style={styles.amount}>€ {expense.amount.toFixed(2)}</Text>
-                            <Text style={styles.date}>
+                            <Text style={[styles.description, { color: theme.colors.text.primary }]}>{expense.description}</Text>
+                            <Text style={[styles.amount, { color: theme.colors.text.primary }]}>€ {expense.amount.toFixed(2)}</Text>
+                            <Text style={[styles.date, { color: theme.colors.text.secondary }]}>
                                 {new Date(expense.created_at).toLocaleDateString('nl-NL', {
                                     weekday: 'long',
                                     day: 'numeric',
@@ -124,14 +125,14 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
                             </Text>
                         </View>
 
-                        <View style={styles.divider} />
+                        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
                         {/* Impact List */}
-                        <Text style={styles.sectionTitle}>Effect op balans</Text>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.text.secondary }]}>Effect op balans</Text>
                         {loading ? (
-                            <ActivityIndicator color={KribTheme.colors.primary} style={{ marginTop: 20 }} />
+                            <ActivityIndicator color={theme.colors.primary} style={{ marginTop: 20 }} />
                         ) : (
-                            <View style={styles.impactList}>
+                            <View style={[styles.impactList, { backgroundColor: theme.colors.background }]}>
                                 {renderImpactList()}
                             </View>
                         )}
@@ -139,9 +140,9 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
                         {/* Receipt */}
                         {expense.receipt_url && (
                             <>
-                                <View style={styles.divider} />
-                                <Text style={styles.sectionTitle}>Bonnetje</Text>
-                                <View style={styles.receiptContainer}>
+                                <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+                                <Text style={[styles.sectionTitle, { color: theme.colors.text.secondary }]}>Bonnetje</Text>
+                                <View style={[styles.receiptContainer, { backgroundColor: theme.colors.background }]}>
                                     <Image
                                         source={{ uri: expense.receipt_url }}
                                         style={styles.receiptImage}
@@ -164,12 +165,16 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     content: {
-        backgroundColor: KribTheme.colors.background,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         height: '80%',
         paddingTop: 24,
-        ...KribTheme.shadows.floating,
+        // Shadows would be dynamic or passed but here we can rely on elevation or basic shadow
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 10,
     },
     header: {
         flexDirection: 'row',
@@ -181,11 +186,9 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#FFFFFF',
     },
     closeButton: {
         padding: 4,
-        backgroundColor: 'rgba(255,255,255,0.1)',
         borderRadius: 12,
     },
     scrollContent: {
@@ -198,33 +201,26 @@ const styles = StyleSheet.create({
     description: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#FFFFFF',
         marginBottom: 8,
         textAlign: 'center',
     },
     amount: {
         fontSize: 32,
         fontWeight: '900',
-        // Make it pop against dark bg if needed, or stick to primary
-        color: '#FFFFFF',
     },
     date: {
         fontSize: 14,
-        color: 'rgba(255,255,255,0.6)',
     },
     divider: {
         height: 1,
-        backgroundColor: 'rgba(255,255,255,0.1)',
         marginVertical: 24,
     },
     sectionTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: 'rgba(255,255,255,0.8)',
         marginBottom: 16,
     },
     impactList: {
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderRadius: 16,
         padding: 16,
     },
@@ -242,23 +238,19 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: KribTheme.colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
     },
     avatarText: {
-        color: '#FFFFFF',
         fontWeight: 'bold',
     },
     username: {
         fontSize: 16,
-        color: '#FFFFFF',
         fontWeight: '500',
     },
     payerBadge: {
         fontSize: 12,
-        color: 'rgba(255, 255, 255, 0.6)',
         fontStyle: 'italic',
     },
     impactAmount: {
@@ -266,7 +258,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     receiptContainer: {
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderRadius: 16,
         padding: 8,
         height: 300,

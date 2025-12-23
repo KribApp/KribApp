@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { Menu, Send, User, Paperclip, Heart } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect, useRef } from 'react';

@@ -167,6 +167,12 @@ export default function Groceries() {
         }
         if (!newItemName.trim() || !userId) return;
 
+        // CHECK LIMIT: Max 30 items
+        if (items.length >= 30) {
+            Alert.alert('Limiet bereikt', 'Je hebt het maximumaantal van 30 items bereikt.');
+            return;
+        }
+
         const name = newItemName.trim();
         setNewItemName('');
         setSubmitting(true);

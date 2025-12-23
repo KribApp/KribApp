@@ -31,32 +31,35 @@ export default function CustomDrawerContent(props: any) {
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
                 {/* Profile Header */}
-                <View style={styles.header}>
+                <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
                     <View style={styles.headerTopRow}>
                         <TouchableOpacity
-                            style={styles.settingsButton}
+                            style={[styles.settingsButton, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}
                             onPress={() => {
                                 props.navigation.closeDrawer();
                                 router.push('/user-settings');
                             }}
                         >
-                            <Settings size={20} color={theme.colors.primary} />
+                            <Settings size={20} color={theme.colors.text.primary} />
                         </TouchableOpacity>
-                        <View style={styles.avatarContainer}>
+
+                        <View style={[styles.avatarContainer, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                             {user?.profile_picture_url ? (
                                 <Image
                                     source={{ uri: user.profile_picture_url }}
-                                    style={{ width: 80, height: 80, borderRadius: 40 }}
+                                    style={styles.avatar}
                                 />
                             ) : (
                                 <User size={32} color={theme.colors.primary} />
                             )}
                         </View>
+
                         <View style={{ width: 40 }} />
                     </View>
 
-                    <Text style={[styles.username, { color: theme.colors.text.inverse }]} numberOfLines={1}>{userEmail.split('@')[0]}</Text>
-                    <Text style={[styles.email, { color: theme.colors.text.inverse }]} numberOfLines={1}>{userEmail}</Text>
+                    <Text style={[styles.username, { color: theme.colors.onBackground }]} numberOfLines={1}>
+                        {user?.username || userEmail.split('@')[0]}
+                    </Text>
                 </View>
 
                 {/* Navigation Items */}
@@ -68,8 +71,7 @@ export default function CustomDrawerContent(props: any) {
                                 key={index}
                                 style={[
                                     styles.item,
-                                    { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor },
-                                    isActive && { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.primary, borderWidth: 1 }
+                                    { backgroundColor: isActive ? theme.colors.primary : 'transparent' }
                                 ]}
                                 onPress={() => {
                                     props.navigation.closeDrawer();
@@ -78,9 +80,13 @@ export default function CustomDrawerContent(props: any) {
                             >
                                 <item.icon
                                     size={24}
-                                    color={isActive ? theme.colors.primary : theme.colors.text.primary}
+                                    color={isActive ? '#FFFFFF' : theme.colors.onBackground}
                                 />
-                                <Text style={[styles.itemLabel, { color: theme.colors.text.primary }, isActive && { color: theme.colors.primary, fontWeight: 'bold' }]}>
+                                <Text style={[
+                                    styles.itemLabel,
+                                    { color: isActive ? '#FFFFFF' : theme.colors.onBackground },
+                                    isActive && { fontWeight: 'bold' }
+                                ]}>
                                     {item.label}
                                 </Text>
                             </TouchableOpacity>
@@ -99,58 +105,66 @@ const styles = StyleSheet.create({
     header: {
         padding: 24,
         paddingTop: 60,
-        marginBottom: 16,
-        alignItems: 'center',
+        marginBottom: 8,
+        alignItems: 'center', // Center content horizontally
     },
     headerTopRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        marginBottom: 12,
+        marginBottom: 16,
     },
     settingsButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
-        ...KribTheme.shadows.card,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     avatarContainer: {
+        width: 80, // Increased size
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    avatar: {
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: '#FFFFFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...KribTheme.shadows.card,
     },
     username: {
-        fontSize: 20,
+        fontSize: 22, // Slightly larger
         fontWeight: 'bold',
         marginBottom: 4,
+        textAlign: 'center',
     },
     email: {
         fontSize: 14,
-        opacity: 0.8,
+        display: 'none', // Ensure it's hidden if somehow rendered
     },
     itemsContainer: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 8, // Reduced padding to make buttons wider
     },
     item: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        borderRadius: KribTheme.borderRadius.m,
-        marginBottom: 12,
-        ...KribTheme.shadows.card,
+        padding: 16, // Increased padding for larger touch target
+        borderRadius: 12,
+        marginBottom: 6, // Slightly more spacing
     },
-
     itemLabel: {
         marginLeft: 16,
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 17, // Slightly larger font
+        fontWeight: '500',
     },
 });

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import { X, Plus, Trash2 } from 'lucide-react-native';
 
+import { useTheme } from '../../context/ThemeContext';
+
 interface TaskListModalProps {
     visible: boolean;
     onClose: () => void;
@@ -12,6 +14,7 @@ interface TaskListModalProps {
 }
 
 export function TaskListModal({ visible, onClose, templates, canManage, onAddTemplate, onDeleteTemplate }: TaskListModalProps) {
+    const { theme } = useTheme();
     const [newTemplateTitle, setNewTemplateTitle] = useState('');
 
     const handleAdd = () => {
@@ -29,29 +32,30 @@ export function TaskListModal({ visible, onClose, templates, canManage, onAddTem
             onRequestClose={onClose}
         >
             <KeyboardAvoidingView
-                style={styles.modalContainer}
+                style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Takenlijst</Text>
+                <View style={[styles.modalHeader, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
+                    <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Takenlijst</Text>
                     <TouchableOpacity onPress={onClose}>
-                        <X size={24} color="#374151" />
+                        <X size={24} color={theme.colors.text.primary} />
                     </TouchableOpacity>
                 </View>
 
                 {canManage && (
-                    <View style={styles.addChoreForm}>
-                        <Text style={styles.formLabel}>Nieuwe taak toevoegen</Text>
+                    <View style={[styles.addChoreForm, { backgroundColor: theme.colors.surface }]}>
+                        <Text style={[styles.formLabel, { color: theme.colors.text.primary }]}>Nieuwe taak toevoegen</Text>
                         <View style={styles.inputRow}>
                             <TextInput
-                                style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                                style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: theme.colors.background, borderColor: theme.colors.border, color: theme.colors.text.primary }]}
                                 placeholder="Bijv. Badkamer schoonmaken"
+                                placeholderTextColor={theme.colors.text.secondary}
                                 value={newTemplateTitle}
                                 onChangeText={setNewTemplateTitle}
                                 returnKeyType="done"
                             />
-                            <TouchableOpacity style={styles.addButtonSmall} onPress={handleAdd}>
-                                <Plus size={20} color="#FFF" />
+                            <TouchableOpacity style={[styles.addButtonSmall, { backgroundColor: theme.colors.primary }]} onPress={handleAdd}>
+                                <Plus size={20} color={theme.colors.text.inverse} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -61,17 +65,17 @@ export function TaskListModal({ visible, onClose, templates, canManage, onAddTem
                     data={templates}
                     keyExtractor={item => item.id}
                     renderItem={({ item }) => (
-                        <View style={styles.modalChoreItem}>
-                            <Text style={styles.modalChoreTitle}>{item.title}</Text>
+                        <View style={[styles.modalChoreItem, { backgroundColor: theme.colors.surface }]}>
+                            <Text style={[styles.modalChoreTitle, { color: theme.colors.text.primary }]}>{item.title}</Text>
                             {canManage && (
                                 <TouchableOpacity onPress={() => onDeleteTemplate(item.id)}>
-                                    <Trash2 size={20} color="#EF4444" />
+                                    <Trash2 size={20} color={theme.colors.error} />
                                 </TouchableOpacity>
                             )}
                         </View>
                     )}
                     contentContainerStyle={styles.modalListContent}
-                    ListEmptyComponent={<Text style={styles.emptyListText}>Geen sjablonen gevonden.</Text>}
+                    ListEmptyComponent={<Text style={[styles.emptyListText, { color: theme.colors.text.secondary }]}>Geen sjablonen gevonden.</Text>}
                 />
             </KeyboardAvoidingView>
         </Modal>
@@ -81,7 +85,6 @@ export function TaskListModal({ visible, onClose, templates, canManage, onAddTem
 const styles = StyleSheet.create({
     modalContainer: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
         paddingTop: 20,
     },
     modalHeader: {
@@ -89,19 +92,15 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
     },
     modalTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#312e81', // Indigo 900
         textAlign: 'center',
         flex: 1, // Ensure it takes space to center
     },
     addChoreForm: {
-        backgroundColor: '#FFFFFF',
         padding: 16,
         marginBottom: 16,
     },
@@ -116,14 +115,11 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     input: {
-        backgroundColor: '#F9FAFB',
         borderWidth: 1,
-        borderColor: '#E5E7EB',
         borderRadius: 8,
         padding: 12,
     },
     addButtonSmall: {
-        backgroundColor: '#2563EB',
         width: 44,
         height: 44,
         borderRadius: 8,
@@ -137,7 +133,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
         padding: 16,
         borderRadius: 8,
         marginBottom: 8,
@@ -148,7 +143,6 @@ const styles = StyleSheet.create({
     },
     emptyListText: {
         textAlign: 'center',
-        color: '#6B7280',
         fontStyle: 'italic',
     },
 });

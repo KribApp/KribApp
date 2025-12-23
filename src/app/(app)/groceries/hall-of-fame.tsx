@@ -79,6 +79,12 @@ export default function HallOfFame() {
         }
         if (!newRecipeName.trim()) return;
 
+        // CHECK LIMIT: Max 15 recipes
+        if (recipes.length >= 15) {
+            Alert.alert('Limiet bereikt', 'Je hebt het maximumaantal van 15 favorieten bereikt.');
+            return;
+        }
+
         const name = newRecipeName.trim();
         const link = newRecipeLink.trim() || null;
 

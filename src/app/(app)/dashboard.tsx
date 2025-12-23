@@ -1,14 +1,16 @@
 import { View, StyleSheet, Text, TouchableOpacity, FlatList } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { KribTheme } from '../../theme/theme';
 import { useTheme } from '../../context/ThemeContext';
+import { useHousehold } from '../../context/HouseholdContext';
+import { DiningService } from '../../services/DiningService';
 import { HouseHeader } from '../../components/dashboard/HouseHeader';
 import { DiningStatusCard } from '../../components/dashboard/DiningStatusCard';
 import { AlertsList } from '../../components/dashboard/AlertsList';
 import { QuickActions } from '../../components/dashboard/QuickActions';
-import { ActivityFeed } from '../../components/dashboard/ActivityFeed';
 import { NoHouseholdState } from '../../components/dashboard/NoHouseholdState';
 
 export default function Dashboard() {
@@ -19,12 +21,21 @@ export default function Dashboard() {
         alerts,
         eatingCount,
         hasHousehold,
-        activityLogs,
         resolveAlert
     } = useDashboardData();
     const { theme, isDarkMode } = useTheme();
 
     const router = useRouter();
+
+    const { household } = useHousehold();
+
+    useFocusEffect(
+        useCallback(() => {
+            if (household?.config_no_response_action === 'EAT' && household.id) {
+                DiningService.applyDefaultEatingForToday(household.id).catch(console.error);
+            }
+        }, [household])
+    );
 
     if (!loading && !hasHousehold) {
         return <NoHouseholdState />;
@@ -48,9 +59,6 @@ export default function Dashboard() {
 
                         {/* Dining Status Card */}
                         <DiningStatusCard eatingCount={eatingCount} />
-
-                        {/* Activity Feed */}
-                        <ActivityFeed activities={activityLogs} loading={loading} />
 
                         {/* Alerts List */}
                         <AlertsList alerts={alerts} loading={loading} onResolve={resolveAlert} />

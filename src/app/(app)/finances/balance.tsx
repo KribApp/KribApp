@@ -176,7 +176,7 @@ export default function BalancePage() {
             <StatusBar style={isDarkMode ? "light" : "light"} />
 
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: theme.colors.surface }]}>
+                <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
                     <ArrowLeft size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Huis Balans</Text>

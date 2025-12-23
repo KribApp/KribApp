@@ -89,6 +89,13 @@ export default function TurfOverview() {
         setCreating(true);
         const name = newListName.trim();
 
+        // CHECK LIMIT: Max 10 lists
+        if (lists.length >= 10) {
+            Alert.alert('Limiet bereikt', 'Je hebt het maximumaantal van 10 lijsten bereikt.');
+            setCreating(false);
+            return;
+        }
+
         if (lists.includes(name)) {
             Alert.alert('Error', 'Deze lijst bestaat al.');
             setCreating(false);
@@ -187,7 +194,7 @@ export default function TurfOverview() {
                             ]}
                             value={newListName}
                             onChangeText={setNewListName}
-                            placeholder="Nieuwe lijst (bijv. Bier)..."
+                            placeholder="Nieuwe lijst"
                             placeholderTextColor={theme.colors.text.secondary}
                             returnKeyType="done"
                             onSubmitEditing={addList}

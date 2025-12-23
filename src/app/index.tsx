@@ -33,7 +33,7 @@ export default function Index() {
         return (
             <View style={styles.loadingContainer}>
                 <Image
-                    source={require('../../assets/krib-logo.png')}
+                    source={require('../../assets/krib-logo-v2.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     },
     logo: {
         width: 150,
-        height: 150,
+        height: 80,
         marginBottom: 32,
     },
 });

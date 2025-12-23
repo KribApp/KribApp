@@ -16,7 +16,7 @@ export default function LandingPage() {
                 <View style={styles.header}>
                     <View style={styles.logoContainer}>
                         <Image
-                            source={require('../../../assets/krib-logo.png')}
+                            source={require('../../../assets/krib-logo-v2.png')}
                             style={styles.logo}
                             resizeMode="contain"
                         />
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     logo: {
-        width: 32,
+        width: 60,
         height: 32,
     },
     logoText: {
