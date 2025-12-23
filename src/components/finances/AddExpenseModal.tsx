@@ -191,15 +191,16 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
             >
                 <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
                     <View style={styles.header}>
-                        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Nieuwe Uitgave</Text>
-                        <TouchableOpacity onPress={onClose} style={[styles.closeButton, { backgroundColor: theme.colors.text.secondary + '20' }]}>
-                            <X size={24} color={theme.colors.text.primary} />
+                        <Text style={[styles.title, { color: theme.colors.onBackground }]}>Nieuwe Uitgave</Text>
+                        <TouchableOpacity onPress={onClose} style={[styles.closeButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                            <X size={24} color={theme.colors.onBackground} />
                         </TouchableOpacity>
                     </View>
 
                     <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
                         {/* 1. Description */}
-                        <Text style={[styles.label, { color: theme.colors.text.primary }]}>Beschrijving</Text>
+                        {/* 1. Description */}
+                        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Beschrijving</Text>
                         <View style={[styles.inputContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
                             <TextInput
                                 style={[styles.input, { color: theme.colors.text.primary }]}
@@ -213,7 +214,7 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                         {/* 2. Amount & Receipt */}
                         <View style={styles.row}>
                             <View style={{ flex: 1, marginRight: 12 }}>
-                                <Text style={[styles.label, { color: theme.colors.text.primary }]}>Bedrag (€)</Text>
+                                <Text style={[styles.label, { color: theme.colors.onBackground }]}>Bedrag (€)</Text>
                                 <View style={[styles.inputContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
                                     <TextInput
                                         style={[styles.input, { color: theme.colors.text.primary }]}
@@ -226,7 +227,7 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                                 </View>
                             </View>
                             <View>
-                                <Text style={[styles.label, { color: theme.colors.text.primary }]}>Bonnetje</Text>
+                                <Text style={[styles.label, { color: theme.colors.onBackground }]}>Bonnetje</Text>
                                 <TouchableOpacity
                                     style={[styles.receiptButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, receiptUri ? { backgroundColor: theme.colors.success } : {}]}
                                     onPress={pickReceipt}
@@ -243,7 +244,7 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                         <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
                         {/* 3. Who Paid? */}
-                        <Text style={[styles.label, { color: theme.colors.text.primary }]}>Betaald door</Text>
+                        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Betaald door</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.payerScroll}>
                             {members.map(member => (
                                 <TouchableOpacity
@@ -258,7 +259,7 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                                     <Text style={[
                                         styles.payerText,
                                         { color: theme.colors.text.secondary },
-                                        payerId === member.user_id && { color: theme.colors.text.inverse }
+                                        payerId === member.user_id && { color: theme.colors.onBackground }
                                     ]}>
                                         {member.users.username}
                                     </Text>
@@ -269,8 +270,8 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                         <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
                         {/* 4. Split (Smart Shares) */}
-                        <Text style={[styles.label, { color: theme.colors.text.primary }]}>Verdeling</Text>
-                        <Text style={[styles.helperText, { color: theme.colors.text.secondary }]}>Wie betaalt mee? (+/- voor weging)</Text>
+                        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Verdeling</Text>
+                        <Text style={[styles.helperText, { color: 'rgba(255,255,255,0.7)' }]}>Wie betaalt mee? (+/- voor weging)</Text>
 
                         <View style={[styles.sharesList, { backgroundColor: theme.colors.surface }]}>
                             {members.map(member => {
@@ -296,7 +297,7 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                                     <View key={member.user_id} style={[styles.shareRow, { borderBottomColor: theme.colors.border }]}>
                                         <View style={styles.shareUser}>
                                             <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
-                                                <Text style={[styles.avatarText, { color: theme.colors.text.inverse }]}>{member.users.username.charAt(0)}</Text>
+                                                <Text style={[styles.avatarText, { color: theme.colors.onBackground }]}>{member.users.username.charAt(0)}</Text>
                                             </View>
                                             <View>
                                                 <Text style={[styles.shareUsername, { color: theme.colors.text.primary }]}>{member.users.username}</Text>
@@ -322,7 +323,7 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                                                 style={[styles.controlBtn, styles.controlBtnAdd, { backgroundColor: theme.colors.primary }]}
                                                 onPress={() => handleShareChange(member.user_id, 1)}
                                             >
-                                                <Plus size={16} color={theme.colors.text.inverse} />
+                                                <Plus size={16} color={theme.colors.onBackground} />
                                             </TouchableOpacity>
                                         </View>
                                     </View>
@@ -336,14 +337,14 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
 
                     <View style={[styles.footer, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border }]}>
                         <TouchableOpacity
-                            style={[styles.saveButton, { backgroundColor: theme.colors.primary }]}
+                            style={[styles.saveButton, { backgroundColor: theme.colors.surface }]}
                             onPress={handleSave}
                             disabled={loading}
                         >
                             {loading ? (
-                                <ActivityIndicator color="#FFFFFF" />
+                                <ActivityIndicator color={theme.colors.primary} />
                             ) : (
-                                <Text style={[styles.saveButtonText, { color: theme.colors.text.inverse }]}>Toevoegen</Text>
+                                <Text style={[styles.saveButtonText, { color: theme.colors.primary }]}>Toevoegen</Text>
                             )}
                         </TouchableOpacity>
                     </View>

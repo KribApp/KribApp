@@ -209,11 +209,11 @@ export default function UserSettings() {
             <StatusBar style={isDarkMode ? "light" : "dark"} />
 
             {/* Header */}
-            <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ArrowLeft size={24} color={theme.colors.text.inverse} />
+                    <ArrowLeft size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.text.inverse }]}>Persoonlijke Instellingen</Text>
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Persoonlijke Instellingen</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -226,7 +226,7 @@ export default function UserSettings() {
 
                     {/* SECTION 1: PROFILE */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.inverse, opacity: 0.7 }]}>PROFIEL</Text>
+                        <Text style={[styles.sectionHeaderText, { color: theme.colors.onBackground, opacity: 0.7 }]}>PROFIEL</Text>
                     </View>
 
                     <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
@@ -280,7 +280,7 @@ export default function UserSettings() {
 
                     {/* SECTION 2: APPEARANCE */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.inverse, opacity: 0.7 }]}>UITERLIJK & APP</Text>
+                        <Text style={[styles.sectionHeaderText, { color: theme.colors.onBackground, opacity: 0.7 }]}>UITERLIJK & APP</Text>
                     </View>
 
                     <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
@@ -305,7 +305,7 @@ export default function UserSettings() {
 
                     {/* SECTION 3: SUPPORT & SAFETY */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.inverse, opacity: 0.7 }]}>ONDERSTEUNING & VEILIGHEID</Text>
+                        <Text style={[styles.sectionHeaderText, { color: theme.colors.onBackground, opacity: 0.7 }]}>ONDERSTEUNING & VEILIGHEID</Text>
                     </View>
 
                     <View style={[styles.card, { backgroundColor: theme.colors.surface, padding: 0, overflow: 'hidden' }]}>
@@ -355,7 +355,7 @@ export default function UserSettings() {
 
                     {/* SECTION 4: ACCOUNT */}
                     <View style={styles.sectionHeaderContainer}>
-                        <Text style={[styles.sectionHeaderText, { color: theme.colors.text.inverse, opacity: 0.7 }]}>ACCOUNT</Text>
+                        <Text style={[styles.sectionHeaderText, { color: theme.colors.onBackground, opacity: 0.7 }]}>ACCOUNT</Text>
                     </View>
 
                     <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import tzlookup from 'tz-lookup';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, FlatList, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, FlatList, Keyboard, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../../services/supabase';
 import { StatusBar } from 'expo-status-bar';
@@ -207,7 +207,7 @@ export default function CreateHousehold() {
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                <View style={styles.container}>
+                <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
                     <StatusBar style="light" />
                     <View style={styles.header}>
                         <Text style={styles.title}>Nieuw Huis</Text>
@@ -344,7 +344,7 @@ export default function CreateHousehold() {
                             <Text style={styles.backButtonText}>Terug</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
+                </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -352,10 +352,11 @@ export default function CreateHousehold() {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flexGrow: 1,
         backgroundColor: KribTheme.colors.background,
         padding: 24,
-        justifyContent: 'center',
+        paddingTop: 10, // Add some top padding
+        // justifyContent: 'center', // Removed to prevent pushing content up
     },
     header: {
         marginBottom: 32,

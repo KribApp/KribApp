@@ -83,11 +83,13 @@ export default function Login() {
                 <View style={styles.container}>
                     <StatusBar style="light" />
                     <View style={styles.header}>
-                        <Image
-                            source={require('../../../assets/krib-logo-v3.png')}
-                            style={styles.logo}
-                            resizeMode="contain"
-                        />
+                        <View style={styles.logoContainer}>
+                            <Image
+                                source={require('../../../assets/krib-logo-v3.png')}
+                                style={styles.logo}
+                                resizeMode="contain"
+                            />
+                        </View>
                         <Text style={styles.title}>Welkom terug!</Text>
                         <Text style={styles.subtitle}>Log in om verder te gaan.</Text>
                     </View>
@@ -163,10 +165,19 @@ const styles = StyleSheet.create({
         marginBottom: 32,
         alignItems: 'center',
     },
-    logo: {
-        width: 250,
-        height: 133,
+    logoContainer: {
+        width: 140,
+        height: 140,
+        backgroundColor: 'white',
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
         marginBottom: 24,
+        ...KribTheme.shadows.card,
+    },
+    logo: {
+        width: '80%',
+        height: '80%',
     },
     title: {
         fontSize: 32,

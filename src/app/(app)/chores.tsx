@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../../context/ThemeContext';
 import { KribTheme } from '../../theme/theme';
 import { useChoresData } from '../../hooks/useChoresData';
+import { DrawerToggleButton } from '@react-navigation/drawer';
 import { CalendarView } from '../../components/chores/CalendarView';
 import { DayDetail } from '../../components/chores/DayDetail';
 import { TaskListModal } from '../../components/chores/TaskListModal';
@@ -247,14 +248,18 @@ export default function Huishouden() {
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <StatusBar style={isDarkMode ? "light" : "light"} />
             <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-                {/* Back button handled by Stack or custom back if needed, but for now simple header title left aligned or centered */}
+                <View style={{ width: 40, alignItems: 'flex-start' }}>
+                    <DrawerToggleButton tintColor={theme.colors.onBackground} />
+                </View>
                 <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Huishouden</Text>
-                <TouchableOpacity
-                    style={styles.taskListButton}
-                    onPress={() => setShowTaskList(true)}
-                >
-                    <List size={24} color={theme.colors.onBackground} />
-                </TouchableOpacity>
+                <View style={{ width: 40, alignItems: 'flex-end' }}>
+                    <TouchableOpacity
+                        style={styles.taskListButton}
+                        onPress={() => setShowTaskList(true)}
+                    >
+                        <List size={24} color={theme.colors.onBackground} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={styles.tabContainer}>

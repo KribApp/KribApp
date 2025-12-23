@@ -74,7 +74,7 @@ export default function Register() {
             // Email confirmation is enabled - user needs to verify email
             Alert.alert(
                 'Email Verificatie',
-                'Er is een bevestigingsmail verstuurd naar ' + email + '. Klik op de link in de mail om je account te activeren.',
+                'Er is een bevestigingsmail verstuurd naar ' + email + '. Check ook je spam-box! Klik op de link in de mail om je account te activeren.',
                 [
                     {
                         text: 'OK',
@@ -212,13 +212,13 @@ export default function Register() {
                             <DateTimePicker
                                 value={birthdate}
                                 mode="date"
-                                display="default"
+                                display="spinner"
                                 onChange={(event, selectedDate) => {
                                     if (selectedDate) {
                                         setBirthdate(selectedDate);
                                     }
                                 }}
-                                style={{ alignSelf: 'flex-start' }}
+                                style={{ alignSelf: 'center', height: 120, width: '100%' }}
                                 themeVariant="dark"
                             />
                         )}

@@ -94,6 +94,19 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
                 // Do NOT sign out here. Let the registration/callback flow handle the insertion.
                 return;
             } else {
+                // Check if birthdate is missing but exists in metadata (e.g. from registration)
+                if (!userProfile.birthdate && authUser.user_metadata?.birthdate) {
+                    // Sync birthdate to profile
+                    const { error: updateError } = await supabase
+                        .from('users')
+                        .update({ birthdate: authUser.user_metadata.birthdate })
+                        .eq('id', authUser.id);
+
+                    if (!updateError) {
+                        userProfile.birthdate = authUser.user_metadata.birthdate;
+                    }
+                }
+
                 setUser(userProfile);
             }
 

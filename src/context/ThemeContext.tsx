@@ -29,8 +29,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             } else if (savedTheme === 'light') {
                 setIsDarkMode(false);
             } else {
-                // Default to system preference if no saved setting
-                setIsDarkMode(systemColorScheme === 'dark');
+                // Default to Light mode if no saved setting (User preference: don't auto-switch)
+                setIsDarkMode(false);
             }
         } catch (e) {
             console.error('Failed to load theme preference', e);

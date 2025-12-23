@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Switch } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../services/supabase';
 import { useHousehold } from '../../context/HouseholdContext';
 import { Save, ArrowLeft, X, Clock, Camera, Link as LinkIcon, Image as ImageIcon, MapPin, Hash, LogOut, Users } from 'lucide-react-native';
@@ -21,6 +21,7 @@ export default function HouseSettings() {
     const { theme, isDarkMode } = useTheme();
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
     const isAdmin = member?.role === 'ADMIN';
     const householdId = household?.id;
@@ -107,6 +108,7 @@ export default function HouseSettings() {
             if (uploadedUrl) {
                 setPhotoUrl(uploadedUrl);
                 setShowLinkInput(false);
+                handleDirectSave({ photo_url: uploadedUrl });
             }
         }
     };
@@ -132,36 +134,66 @@ export default function HouseSettings() {
         ]);
     };
 
-    async function handleSave() {
-        if (!isAdmin) {
-            Alert.alert('Geen toegang', 'Alleen beheerders kunnen instellingen aanpassen.');
-            return;
-        }
+    const performAutoSave = async (updates: any) => {
+        if (!isAdmin || !householdId) return;
 
         setSaving(true);
-
-        if (householdId) {
+        try {
             const { error } = await supabase
                 .from('households')
-                .update({
-                    name,
-                    photo_url: photoUrl,
-                    config_no_response_action: noResponseAction,
-                    config_deadline_time: deadlineTime
-                } as any)
+                .update(updates)
                 .eq('id', householdId);
 
             if (error) {
-                console.error('Error updating settings:', error);
-                Alert.alert('Error', 'Kon instellingen niet opslaan.');
+                console.error('Error auto-saving:', error);
             } else {
-                await refreshHousehold();
-                Alert.alert('Succes', 'Instellingen opgeslagen!');
+                // await refreshHousehold(); // Optional: might cause flickering if we refresh full data on every keystroke
             }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSaving(false);
         }
+    };
+
+    const debouncedSave = (updates: any) => {
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+        debounceTimer.current = setTimeout(() => {
+            performAutoSave(updates);
+        }, 1000); // 1 sec debounce
+    };
+
+    // Update handlers
+    const handleNameChange = (text: string) => {
+        setName(text);
+        debouncedSave({ name: text });
+    };
+
+    const handlePhotoUrlChange = (text: string) => {
+        setPhotoUrl(text);
+        debouncedSave({ photo_url: text });
+    };
+
+    const handleDeadlineChange = (timeStr: string) => {
+        setDeadlineTime(timeStr);
+        performAutoSave({ config_deadline_time: timeStr });
+    };
+
+    // Direct save for non-text inputs (Switch, Image Picker)
+    const handleDirectSave = async (updates: any) => {
+        if (!isAdmin || !householdId) return;
+        setSaving(true);
+        const { error } = await supabase
+            .from('households')
+            .update(updates)
+            .eq('id', householdId);
+
+        if (error) console.error(error);
+        else await refreshHousehold();
 
         setSaving(false);
-    }
+    };
 
     async function handleLeaveHousehold() {
         if (!member || !householdId) return;
@@ -225,7 +257,10 @@ export default function HouseSettings() {
                 <TouchableOpacity onPress={() => router.replace('/(app)/house-info')} style={styles.backButton}>
                     <ArrowLeft size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Huis Instellingen</Text>
+                <View style={{ alignItems: 'center' }}>
+                    <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Huis Instellingen</Text>
+                    {saving && <ActivityIndicator size="small" color={theme.colors.onBackground} style={{ marginTop: 4, height: 10 }} />}
+                </View>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -269,7 +304,7 @@ export default function HouseSettings() {
                                     <TextInput
                                         style={[styles.input, { color: theme.colors.text.primary }]}
                                         value={photoUrl}
-                                        onChangeText={setPhotoUrl}
+                                        onChangeText={handlePhotoUrlChange}
                                         placeholder="https://example.com/image.jpg"
                                         placeholderTextColor={theme.colors.text.secondary}
                                         autoCapitalize="none"
@@ -290,7 +325,7 @@ export default function HouseSettings() {
                                 <TextInput
                                     style={[styles.input, { color: theme.colors.text.primary }]}
                                     value={name}
-                                    onChangeText={setName}
+                                    onChangeText={handleNameChange}
                                     placeholder="Naam"
                                     placeholderTextColor={theme.colors.text.secondary}
                                     editable={isAdmin}
@@ -362,7 +397,7 @@ export default function HouseSettings() {
                                             if (selectedDate) {
                                                 const hours = selectedDate.getHours().toString().padStart(2, '0');
                                                 const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-                                                setDeadlineTime(`${hours}:${minutes}:00`);
+                                                handleDeadlineChange(`${hours}:${minutes}:00`);
                                             }
                                         }}
                                         style={{ alignSelf: 'flex-start' }}
@@ -386,7 +421,7 @@ export default function HouseSettings() {
                                             if (selectedDate) {
                                                 const hours = selectedDate.getHours().toString().padStart(2, '0');
                                                 const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-                                                setDeadlineTime(`${hours}:${minutes}:00`);
+                                                handleDeadlineChange(`${hours}:${minutes}:00`);
                                             }
                                         }}
                                     />
@@ -411,6 +446,7 @@ export default function HouseSettings() {
 
                                     const newValue = val ? 'EAT' : 'NO_EAT';
                                     setNoResponseAction(newValue);
+                                    handleDirectSave({ config_no_response_action: newValue });
 
                                     // If toggled ON, immediately apply "Mee-eten" for today for missing members
                                     if (newValue === 'EAT' && householdId) {
@@ -442,18 +478,7 @@ export default function HouseSettings() {
                         <Text style={[styles.helperText, { color: theme.colors.text.secondary }]}>Deel deze code met huisgenoten</Text>
                     </View>
 
-                    {isAdmin && (
-                        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-                            {saving ? (
-                                <ActivityIndicator color="#FFFFFF" />
-                            ) : (
-                                <>
-                                    <Save size={20} color={theme.colors.text.inverse} />
-                                    <Text style={[styles.saveButtonText, { color: theme.colors.text.inverse }]}>Opslaan</Text>
-                                </>
-                            )}
-                        </TouchableOpacity>
-                    )}
+                    {/* Save Button Removed - Auto Save Implemented */}
 
                     {!isAdmin && (
                         <Text style={[styles.warningText, { color: theme.colors.text.secondary }]}>Alleen beheerders kunnen deze instellingen wijzigen.</Text>

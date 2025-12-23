@@ -44,7 +44,6 @@ export function AssignmentModal({ visible, onClose, templates, members, selected
                                 >
                                     <View style={styles.templateInfo}>
                                         <Text style={[styles.selectionItemText, { color: theme.colors.text.primary }]}>{item.title}</Text>
-                                        {item.points && <Text style={[styles.points, { color: theme.colors.warning }]}>{item.points} pnt</Text>}
                                     </View>
                                     <ChevronRight size={20} color={theme.colors.text.secondary} />
                                 </TouchableOpacity>

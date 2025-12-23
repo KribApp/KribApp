@@ -64,9 +64,6 @@ export function MyTodoList({ chores, userId, onToggleStatus }: MyTodoListProps) 
                             ]}>
                                 {dueDate.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })}
                             </Text>
-                            {item.points && (
-                                <Text style={styles.points}>• {item.points} pnt</Text>
-                            )}
                         </View>
                     )}
                 </View>

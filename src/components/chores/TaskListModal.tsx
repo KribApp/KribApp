@@ -35,27 +35,27 @@ export function TaskListModal({ visible, onClose, templates, canManage, onAddTem
                 style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                <View style={[styles.modalHeader, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
-                    <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Takenlijst</Text>
-                    <TouchableOpacity onPress={onClose}>
-                        <X size={24} color={theme.colors.text.primary} />
+                <View style={[styles.modalHeader, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
+                    <Text style={[styles.modalTitle, { color: theme.colors.onBackground }]}>Takenlijst</Text>
+                    <TouchableOpacity onPress={onClose} style={{ padding: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 }}>
+                        <X size={24} color={theme.colors.onBackground} />
                     </TouchableOpacity>
                 </View>
 
                 {canManage && (
-                    <View style={[styles.addChoreForm, { backgroundColor: theme.colors.surface }]}>
-                        <Text style={[styles.formLabel, { color: theme.colors.text.primary }]}>Nieuwe taak toevoegen</Text>
+                    <View style={[styles.addChoreForm, { backgroundColor: theme.colors.background }]}>
+                        <Text style={[styles.formLabel, { color: theme.colors.onBackground }]}>Nieuwe taak toevoegen</Text>
                         <View style={styles.inputRow}>
                             <TextInput
-                                style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: theme.colors.background, borderColor: theme.colors.border, color: theme.colors.text.primary }]}
+                                style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text.primary }]}
                                 placeholder="Bijv. Badkamer schoonmaken"
                                 placeholderTextColor={theme.colors.text.secondary}
                                 value={newTemplateTitle}
                                 onChangeText={setNewTemplateTitle}
                                 returnKeyType="done"
                             />
-                            <TouchableOpacity style={[styles.addButtonSmall, { backgroundColor: theme.colors.primary }]} onPress={handleAdd}>
-                                <Plus size={20} color={theme.colors.text.inverse} />
+                            <TouchableOpacity style={[styles.addButtonSmall, { backgroundColor: theme.colors.surface }]} onPress={handleAdd}>
+                                <Plus size={20} color={theme.colors.primary} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -75,7 +75,7 @@ export function TaskListModal({ visible, onClose, templates, canManage, onAddTem
                         </View>
                     )}
                     contentContainerStyle={styles.modalListContent}
-                    ListEmptyComponent={<Text style={[styles.emptyListText, { color: theme.colors.text.secondary }]}>Geen sjablonen gevonden.</Text>}
+                    ListEmptyComponent={<Text style={[styles.emptyListText, { color: 'rgba(255,255,255,0.7)' }]}>Geen sjablonen gevonden.</Text>}
                 />
             </KeyboardAvoidingView>
         </Modal>
