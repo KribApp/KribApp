@@ -45,7 +45,7 @@ export default function LandingPage() {
                         <View style={styles.ctaContainer}>
                             {/* CTA buttons removed */}
                             <View style={styles.primaryCta}>
-                                <Text style={styles.primaryCtaText}>Download on Web & Mobile</Text>
+                                <Text style={styles.primaryCtaText}>Download in the App Store</Text>
                             </View>
                         </View>
                     </View>
