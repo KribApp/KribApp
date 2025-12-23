@@ -84,7 +84,7 @@ export default function Login() {
                     <StatusBar style="light" />
                     <View style={styles.header}>
                         <Image
-                            source={require('../../../assets/krib-logo-v2.png')}
+                            source={require('../../../assets/krib-logo-v3.png')}
                             style={styles.logo}
                             resizeMode="contain"
                         />

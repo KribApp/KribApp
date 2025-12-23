@@ -33,7 +33,7 @@ export default function Index() {
         return (
             <View style={styles.loadingContainer}>
                 <Image
-                    source={require('../../assets/krib-logo-v2.png')}
+                    source={require('../../assets/krib-logo-v3.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />

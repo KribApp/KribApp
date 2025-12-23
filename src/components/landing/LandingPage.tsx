@@ -16,7 +16,7 @@ export default function LandingPage() {
                 <View style={styles.header}>
                     <View style={styles.logoContainer}>
                         <Image
-                            source={require('../../../assets/krib-logo-v2.png')}
+                            source={require('../../../assets/krib-logo-v3.png')}
                             style={styles.logo}
                             resizeMode="contain"
                         />
