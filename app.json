@@ -34,7 +34,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/krib-favicon.png"
     },
     "plugins": [
       "expo-router"

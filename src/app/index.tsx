@@ -3,7 +3,7 @@ import { View, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useHousehold } from '../context/HouseholdContext';
 import { KribTheme } from '../theme/theme';
-import LandingPage from '../components/landing/LandingPage';
+
 
 /**
  * Entry point that handles initial routing based on auth and household state.
@@ -12,7 +12,7 @@ import LandingPage from '../components/landing/LandingPage';
 export default function Index() {
     const { user, household, loading } = useHousehold();
 
-    // Use effect for redirects ONLY when we are sure we want to redirect (i.e. logged in)
+    // Use effect for redirects based on auth state
     useEffect(() => {
         if (loading) return;
 
@@ -24,9 +24,10 @@ export default function Index() {
                 // Logged in with household - go to dashboard
                 router.replace('/(app)/dashboard');
             }
+        } else {
+            // Not logged in - go to login
+            router.replace('/(auth)/login');
         }
-        // If !user, we do NOTHING (stay here and render LandingPage)
-        // previously: router.replace('/(auth)/login');
     }, [loading, user, household]);
 
     if (loading) {
@@ -42,9 +43,10 @@ export default function Index() {
         );
     }
 
-    // If we are not logged in (and not loading), show the Landing Page
+    // If we are not logged in (and not loading), we are redirecting to login
+    // So we can return null (or keep loading state if preferred, but usually null avoids flash)
     if (!user) {
-        return <LandingPage />;
+        return null;
     }
 
     // If user exists, we are redirecting (useEffect handles it), return null or loading

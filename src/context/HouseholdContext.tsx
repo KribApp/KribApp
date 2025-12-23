@@ -61,15 +61,17 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
                     return;
                 }
 
-                console.error('Auth error in context:', authError);
-
+                // Handle invalid refresh token (expired session) gracefully
                 if (authError.message.includes('Refresh Token') || authError.message.includes('refresh_token_not_found')) {
-                    console.log('Invalid refresh token detected. Signing out...');
+                    console.log('Session expired (invalid refresh token). Redirecting to login...');
                     await supabase.auth.signOut();
                     setLoading(false);
                     router.replace('/(auth)/login');
                     return;
                 }
+
+                // Log other unexpected errors
+                console.error('Auth error in context:', authError);
             }
 
             if (!authUser) {
