@@ -202,7 +202,7 @@ export default function FinancesFeed() {
 
     const renderExpense = ({ item }: { item: any }) => (
         <TouchableOpacity
-            style={[styles.card, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }, item.is_settled && [styles.cardSettled, { backgroundColor: theme.colors.background }]]}
+            style={[styles.card, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }, item.is_settled && styles.cardSettled]}
             activeOpacity={0.7}
             onPress={() => handleExpensePress(item)}
         >
@@ -268,7 +268,7 @@ export default function FinancesFeed() {
                     </View>
                 </View>
                 {lastSettledDate && (
-                    <Text style={[styles.lastSettledText, { color: theme.colors.text.secondary }]}>
+                    <Text style={[styles.lastSettledText, { color: theme.colors.onBackground }]}>
                         Laatst verrekend: {lastSettledDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
                     </Text>
                 )}
@@ -378,8 +378,7 @@ const styles = StyleSheet.create({
         ...KribTheme.shadows.card,
     },
     cardSettled: {
-        opacity: 0.6,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        opacity: 0.7,
     },
     iconContainer: {
         width: 40,

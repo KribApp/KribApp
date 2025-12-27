@@ -145,7 +145,7 @@ export default function ExpenseDetailModal({ visible, onClose, expense, onUpdate
                         {loading ? (
                             <ActivityIndicator color={theme.colors.primary} style={{ marginTop: 20 }} />
                         ) : (
-                            <View style={[styles.impactList, { backgroundColor: theme.colors.background }]}>
+                            <View style={[styles.impactList, { backgroundColor: theme.colors.inputBackground }]}>
                                 {renderImpactList()}
                             </View>
                         )}
@@ -155,7 +155,7 @@ export default function ExpenseDetailModal({ visible, onClose, expense, onUpdate
                             <>
                                 <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
                                 <Text style={[styles.sectionTitle, { color: theme.colors.text.secondary }]}>Bonnetje</Text>
-                                <View style={[styles.receiptContainer, { backgroundColor: theme.colors.background }]}>
+                                <View style={[styles.receiptContainer, { backgroundColor: theme.colors.inputBackground }]}>
                                     <Image
                                         source={{ uri: activeExpense.receipt_url }}
                                         style={styles.receiptImage}
