@@ -166,56 +166,46 @@ export default function ExpenseDetailModal({ visible, onClose, expense, onUpdate
                         )}
 
                         {/* Delete Button */}
-                        <View style={styles.footer}>
-                            <TouchableOpacity
-                                style={[styles.deleteButton, { backgroundColor: theme.colors.error + '15' }]}
-                                onPress={() => {
-                                    Alert.alert(
-                                        'Uitgave verwijderen',
-                                        'Weet je zeker dat je deze uitgave wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
-                                        [
-                                            { text: 'Annuleren', style: 'cancel' },
-                                            {
-                                                text: 'Verwijderen',
-                                                style: 'destructive',
-                                                onPress: async () => {
-                                                    try {
-                                                        const { data: { user } } = await supabase.auth.getUser();
-                                                        console.log("Debug: Current User ID:", user?.id);
-                                                        console.log("Debug: Expense Payer ID:", expense.payer_user_id);
+                        {!activeExpense?.is_settled && (
+                            <View style={styles.footer}>
+                                <TouchableOpacity
+                                    style={[styles.deleteButton, { backgroundColor: theme.colors.error + '15' }]}
+                                    onPress={() => {
+                                        Alert.alert(
+                                            'Uitgave verwijderen',
+                                            'Weet je zeker dat je deze uitgave wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+                                            [
+                                                { text: 'Annuleren', style: 'cancel' },
+                                                {
+                                                    text: 'Verwijderen',
+                                                    style: 'destructive',
+                                                    onPress: async () => {
+                                                        try {
+                                                            const { error } = await supabase
+                                                                .from('expenses')
+                                                                .update({
+                                                                    is_settled: true,
+                                                                    settled_at: null
+                                                                })
+                                                                .eq('id', expense.id);
 
-                                                        console.log("Debug: Attempting soft delete for expense:", expense.id);
-                                                        const { data, error } = await supabase
-                                                            .from('expenses')
-                                                            .update({
-                                                                is_settled: true,
-                                                                settled_at: new Date().toISOString()
-                                                            })
-                                                            .eq('id', expense.id)
-                                                            .select(); // Select to verifies return
-
-                                                        console.log("Debug: Soft delete result:", { data, error });
-
-                                                        if (error) throw error;
-                                                        if (onUpdate) {
-                                                            console.log("Debug: Calling onUpdate...");
-                                                            onUpdate();
+                                                            if (error) throw error;
+                                                            if (onUpdate) onUpdate();
+                                                            onClose();
+                                                        } catch (err) {
+                                                            Alert.alert('Fout', 'Kon uitgave niet verwijderen.');
                                                         }
-                                                        onClose();
-                                                    } catch (err) {
-                                                        console.error("Debug: Soft delete error:", err);
-                                                        Alert.alert('Fout', 'Kon uitgave niet verwijderen.');
                                                     }
                                                 }
-                                            }
-                                        ]
-                                    );
-                                }}
-                            >
-                                <Trash2 size={20} color={theme.colors.error} style={{ marginRight: 8 }} />
-                                <Text style={[styles.deleteButtonText, { color: theme.colors.error }]}>Uitgave verwijderen</Text>
-                            </TouchableOpacity>
-                        </View>
+                                            ]
+                                        );
+                                    }}
+                                >
+                                    <Trash2 size={20} color={theme.colors.error} style={{ marginRight: 8 }} />
+                                    <Text style={[styles.deleteButtonText, { color: theme.colors.error }]}>Uitgave verwijderen</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                         <View style={{ height: 40 }} />
                     </ScrollView>
                 </View>

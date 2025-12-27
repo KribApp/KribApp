@@ -1,17 +1,17 @@
 import { useEffect } from 'react';
-import { View, ActivityIndicator, Image, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Image, StyleSheet, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useHousehold } from '../context/HouseholdContext';
 import { KribTheme } from '../theme/theme';
 import LandingPage from '../components/LandingPage';
 
 /**
- * Default Entry Point (index.tsx)
- * Acts as the Web Entry Point because Mobile uses index.native.tsx.
+ * Universal Entry Point (index.tsx)
+ * Single entry point for both Web and Mobile platforms.
  * 
  * Logic:
- * - If user is logged in -> Redirect to Dashboard.
- * - If user is NOT logged in -> Render Landing Page.
+ * - Web: If user is logged in -> Redirect to Dashboard. If NOT logged in -> Render Landing Page.
+ * - Mobile: Always redirect to Login or Dashboard (no landing page on mobile).
  */
 export default function Index() {
     const { user, household, loading } = useHousehold();
@@ -26,6 +26,13 @@ export default function Index() {
                 router.replace('/(auth)/household-start');
             } else {
                 router.replace('/(app)/dashboard');
+            }
+        } else {
+            // Not logged in:
+            // - On mobile: redirect to login screen
+            // - On web: render landing page (handled below)
+            if (Platform.OS !== 'web') {
+                router.replace('/(auth)/login');
             }
         }
     }, [loading, user, household]);
@@ -46,7 +53,10 @@ export default function Index() {
     // If user is logged in, we are redirecting (return null).
     if (user) return null;
 
-    // If NOT logged in, render Landing Page
+    // On mobile, we are redirecting to login (return null)
+    if (Platform.OS !== 'web') return null;
+
+    // If NOT logged in on Web, render Landing Page
     return <LandingPage />;
 }
 
