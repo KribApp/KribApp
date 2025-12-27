@@ -329,6 +329,10 @@ export default function FinancesFeed() {
                 visible={!!selectedExpense}
                 onClose={() => setSelectedExpense(null)}
                 expense={selectedExpense}
+                onUpdate={() => {
+                    handleRefresh();
+                    setSelectedExpense(null);
+                }}
             />
         </View>
     );

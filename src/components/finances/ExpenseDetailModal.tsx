@@ -8,9 +8,10 @@ interface ExpenseDetailModalProps {
     visible: boolean;
     onClose: () => void;
     expense: any; // Using any for now to be flexible, but should match Expense type
+    onUpdate?: () => void;
 }
 
-export default function ExpenseDetailModal({ visible, onClose, expense }: ExpenseDetailModalProps) {
+export default function ExpenseDetailModal({ visible, onClose, expense, onUpdate }: ExpenseDetailModalProps) {
     const { theme } = useTheme();
     const [loading, setLoading] = useState(true);
     const [shares, setShares] = useState<any[]>([]);
@@ -179,17 +180,30 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
                                                 style: 'destructive',
                                                 onPress: async () => {
                                                     try {
-                                                        const { error } = await supabase
+                                                        const { data: { user } } = await supabase.auth.getUser();
+                                                        console.log("Debug: Current User ID:", user?.id);
+                                                        console.log("Debug: Expense Payer ID:", expense.payer_user_id);
+
+                                                        console.log("Debug: Attempting soft delete for expense:", expense.id);
+                                                        const { data, error } = await supabase
                                                             .from('expenses')
                                                             .update({
                                                                 is_settled: true,
                                                                 settled_at: new Date().toISOString()
                                                             })
-                                                            .eq('id', expense.id);
+                                                            .eq('id', expense.id)
+                                                            .select(); // Select to verifies return
+
+                                                        console.log("Debug: Soft delete result:", { data, error });
 
                                                         if (error) throw error;
+                                                        if (onUpdate) {
+                                                            console.log("Debug: Calling onUpdate...");
+                                                            onUpdate();
+                                                        }
                                                         onClose();
                                                     } catch (err) {
+                                                        console.error("Debug: Soft delete error:", err);
                                                         Alert.alert('Fout', 'Kon uitgave niet verwijderen.');
                                                     }
                                                 }

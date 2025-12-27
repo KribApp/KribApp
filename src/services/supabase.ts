@@ -1,4 +1,5 @@
 import 'react-native-url-polyfill/auto';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
 
@@ -7,6 +8,17 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'placeholde
 
 const ExpoSecureStoreAdapter = {
   getItem: async (key: string) => {
+    if (Platform.OS === 'web') {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          return localStorage.getItem(key);
+        }
+      } catch (e) {
+        console.error('Local storage is unavailable:', e);
+      }
+      return null;
+    }
+
     try {
       const result = await SecureStore.getItemAsync(key);
       if (!result) return null;
@@ -36,6 +48,17 @@ const ExpoSecureStoreAdapter = {
   },
 
   setItem: async (key: string, value: string) => {
+    if (Platform.OS === 'web') {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(key, value);
+        }
+      } catch (e) {
+        console.error('Local storage is unavailable:', e);
+      }
+      return;
+    }
+
     try {
       const MAX_CHUNK_SIZE = 2000;
 
@@ -70,6 +93,17 @@ const ExpoSecureStoreAdapter = {
   },
 
   removeItem: async (key: string) => {
+    if (Platform.OS === 'web') {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(key);
+        }
+      } catch (e) {
+        console.error('Local storage is unavailable:', e);
+      }
+      return;
+    }
+
     try {
       // Check if we need to remove chunks
       const item = await SecureStore.getItemAsync(key);
