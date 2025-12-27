@@ -131,10 +131,6 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                 }
             }
 
-            console.log("Debug: Saving Expense. Description:", description, "Amount:", cost);
-            console.log("Debug: Members:", members);
-            console.log("Debug: Shares State:", shares);
-
             // 1. Create Expense
             const { data: expense, error: expenseError } = await supabase
                 .from('expenses')
@@ -149,7 +145,6 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                 .single();
 
             if (expenseError) throw expenseError;
-            console.log("Debug: Expense Created:", expense.id);
 
             // 2. Create Shares based on weighted split
             const shareEntries = [];
@@ -166,17 +161,12 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                 }
             }
 
-            console.log("Debug: Share Entries to Insert:", JSON.stringify(shareEntries, null, 2));
-
             if (shareEntries.length > 0) {
                 const { error: sharesError } = await supabase
                     .from('expense_shares')
                     .insert(shareEntries);
 
-                if (sharesError) {
-                    console.error("Debug: Share Insert Error:", sharesError);
-                    throw sharesError;
-                }
+                if (sharesError) throw sharesError;
             }
 
             setLoading(false);

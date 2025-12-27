@@ -5,10 +5,11 @@ import { useHousehold } from '../context/HouseholdContext';
 import { KribTheme } from '../theme/theme';
 import LandingPage from '../components/LandingPage';
 
-
 /**
- * Entry point that handles initial routing based on auth and household state.
- * Uses HouseholdContext for state (no duplicate auth listener here).
+ * Entry point.
+ * NOTE: There is also an index.web.tsx that SHOULD be picked up by Expo Web.
+ * However, as a defensive fallback, this file also handles web rendering to ensure
+ * the Landing Page is always shown if this file is loaded on web instead.
  */
 export default function Index() {
     const { user, household, loading } = useHousehold();
@@ -17,6 +18,18 @@ export default function Index() {
     // Use effect for redirects based on auth state
     useEffect(() => {
         if (loading) return;
+
+        // Web: Strict Landing Page enforcement (Defensive fallback)
+        if (Platform.OS === 'web') {
+            if (user) {
+                if (!household) {
+                    router.replace('/(auth)/household-start');
+                } else {
+                    router.replace('/(app)/dashboard');
+                }
+            }
+            return;
+        }
 
         // Mobile: Strict Redirects
         if (user) {
@@ -41,6 +54,11 @@ export default function Index() {
                 <ActivityIndicator size="large" color={KribTheme.colors.primary} />
             </View>
         );
+    }
+
+    // Web Fallback: Render Landing Page if not logged in
+    if (Platform.OS === 'web' && !user) {
+        return <LandingPage />;
     }
 
     // Mobile: Render nothing while redirecting
