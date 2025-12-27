@@ -1,17 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Plus, CheckCircle, Circle, Trash2 } from 'lucide-react-native';
+import { Plus, CheckCircle, Circle, Trash2, Gift } from 'lucide-react-native';
 
 interface DayDetailProps {
     selectedDate: Date;
     chores: any[];
+    members: any[];
     canManage: boolean;
     onAssignTask: () => void;
     onToggleStatus: (chore: any) => void;
     onDeleteChore: (chore: any) => void;
 }
 
-export function DayDetail({ selectedDate, chores, canManage, onAssignTask, onToggleStatus, onDeleteChore }: DayDetailProps) {
+export function DayDetail({ selectedDate, chores, members, canManage, onAssignTask, onToggleStatus, onDeleteChore }: DayDetailProps) {
     const isSameDay = (d1: Date, d2: Date) => {
         return d1.getFullYear() === d2.getFullYear() &&
             d1.getMonth() === d2.getMonth() &&
@@ -43,6 +44,20 @@ export function DayDetail({ selectedDate, chores, canManage, onAssignTask, onTog
         return compareDate < today;
     };
 
+    const dayBirthdays = members.filter((m: any) => {
+        const userData = Array.isArray(m.users) ? m.users[0] : m.users;
+        if (!userData?.birthdate) return false;
+        const birthDate = new Date(userData.birthdate);
+        return birthDate.getDate() === selectedDate.getDate() &&
+            birthDate.getMonth() === selectedDate.getMonth();
+    }).map((m: any) => {
+        const userData = Array.isArray(m.users) ? m.users[0] : m.users;
+        return {
+            username: userData?.username || 'Unknown',
+            age: selectedDate.getFullYear() - new Date(userData.birthdate).getFullYear()
+        };
+    });
+
     return (
         <View style={styles.dayDetailContainer}>
             <View style={styles.dayDetailHeader}>
@@ -59,6 +74,22 @@ export function DayDetail({ selectedDate, chores, canManage, onAssignTask, onTog
                     </TouchableOpacity>
                 )}
             </View>
+
+            {dayBirthdays.length > 0 && (
+                <View style={styles.birthdayCard}>
+                    <View style={styles.birthdayRow}>
+                        <View style={styles.birthdayIconContainer}>
+                            <Gift size={24} color="#F59E0B" />
+                        </View>
+                        <View>
+                            <Text style={styles.birthdayLabel}>Verjaardag!</Text>
+                            <Text style={styles.birthdayText}>
+                                {dayBirthdays.map(b => `${b.username} wordt ${b.age} jaar!`).join('\n')} 🥳
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            )}
 
             <View style={styles.contentCard}>
                 {dayChores.length === 0 ? (
@@ -170,5 +201,33 @@ const styles = StyleSheet.create({
     },
     deleteButton: {
         padding: 8,
+    },
+    birthdayCard: {
+        backgroundColor: '#FEF3C7',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        borderLeftWidth: 4,
+        borderLeftColor: '#F59E0B',
+    },
+    birthdayRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    birthdayIconContainer: {
+        backgroundColor: '#FDE68A',
+        padding: 8,
+        borderRadius: 20,
+    },
+    birthdayLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#B45309',
+        marginBottom: 2,
+    },
+    birthdayText: {
+        fontSize: 16,
+        color: '#78350F',
     },
 });

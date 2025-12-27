@@ -48,6 +48,47 @@ export default function HouseInfo() {
         }
     }, [householdId]);
 
+    // Real-time subscriptions for members and users
+    useEffect(() => {
+        if (!householdId) return;
+
+        const membersSubscription = supabase
+            .channel('house_info_members')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'household_members',
+                    filter: `household_id=eq.${householdId}`,
+                },
+                () => {
+                    fetchMembers();
+                }
+            )
+            .subscribe();
+
+        const usersSubscription = supabase
+            .channel('house_info_users')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'users',
+                },
+                () => {
+                    fetchMembers();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            membersSubscription.unsubscribe();
+            usersSubscription.unsubscribe();
+        };
+    }, [householdId]);
+
     async function fetchHouseholdAndUser() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
@@ -177,6 +218,16 @@ export default function HouseInfo() {
         switch (role) {
             case 'MEMBER': return styles.roleTextMember;
             default: return styles.roleTextAdmin;
+        }
+    }
+
+    function getRoleDisplayName(role: string) {
+        switch (role) {
+            case 'ADMIN': return 'Admin';
+            case 'FISCUS': return 'Fiscus';
+            case 'CORVEE_PLANNER': return 'Planner';
+            case 'MEMBER': return 'Bewoner';
+            default: return role;
         }
     }
 
@@ -349,7 +400,7 @@ export default function HouseInfo() {
                                     <View style={[styles.roleBadge, getRoleStyle(member.role)]}>
                                         {getRoleIcon(member.role)}
                                         <Text style={[styles.roleText, getRoleTextStyle(member.role)]}>
-                                            {member.role}
+                                            {getRoleDisplayName(member.role)}
                                         </Text>
                                     </View>
                                 </TouchableOpacity>

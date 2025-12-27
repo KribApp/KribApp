@@ -34,6 +34,31 @@ export default function FinancesFeed() {
         fetchInitialData();
     }, []);
 
+    // Real-time subscription for expenses
+    useEffect(() => {
+        if (!householdId) return;
+
+        const subscription = supabase
+            .channel('expenses_feed')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'expenses',
+                    filter: `household_id=eq.${householdId}`,
+                },
+                () => {
+                    fetchExpenses(householdId);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [householdId]);
+
     const fetchInitialData = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();

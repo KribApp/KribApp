@@ -34,6 +34,7 @@ export function WeekCalendar({ selectedDate, onSelectDate, householdId, timezone
         startOfWeek(new Date(selectedDate || new Date()), { weekStartsOn: 1 })
     );
     const [choreDates, setChoreDates] = useState<string[]>([]);
+    const [birthdayDates, setBirthdayDates] = useState<string[]>([]);
 
     // Reset animation when week changes
     useEffect(() => {
@@ -54,8 +55,33 @@ export function WeekCalendar({ selectedDate, onSelectDate, householdId, timezone
     useEffect(() => {
         if (householdId) {
             fetchChoresForWeek();
+            fetchBirthdaysForWeek();
         }
     }, [householdId, currentWeekStart]);
+
+    // Real-time subscription for user updates (birthdays)
+    useEffect(() => {
+        if (!householdId) return;
+
+        const usersSubscription = supabase
+            .channel('week_calendar_users')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'users',
+                },
+                () => {
+                    fetchBirthdaysForWeek();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            usersSubscription.unsubscribe();
+        };
+    }, [householdId]);
 
     async function fetchChoresForWeek() {
         if (!householdId) return;
@@ -77,6 +103,32 @@ export function WeekCalendar({ selectedDate, onSelectDate, householdId, timezone
                 return format(zonedDate, 'yyyy-MM-dd');
             }).filter(Boolean);
             setChoreDates([...new Set(dates)]);
+        }
+    }
+
+    async function fetchBirthdaysForWeek() {
+        if (!householdId) return;
+
+        const { data: members } = await supabase
+            .from('household_members')
+            .select('user_id, users(birthdate)')
+            .eq('household_id', householdId);
+
+        if (members) {
+            const birthdays: string[] = [];
+            days.forEach(day => {
+                const dayMonth = day.getMonth();
+                const dayDate = day.getDate();
+                members.forEach((m: any) => {
+                    const userData = Array.isArray(m.users) ? m.users[0] : m.users;
+                    if (!userData?.birthdate) return;
+                    const bday = new Date(userData.birthdate);
+                    if (bday.getMonth() === dayMonth && bday.getDate() === dayDate) {
+                        birthdays.push(format(day, 'yyyy-MM-dd'));
+                    }
+                });
+            });
+            setBirthdayDates([...new Set(birthdays)]);
         }
     }
 
@@ -156,6 +208,9 @@ export function WeekCalendar({ selectedDate, onSelectDate, householdId, timezone
     return (
         <GestureDetector gesture={panGesture}>
             <View style={styles.container}>
+                <Text style={styles.monthText}>
+                    {format(currentWeekStart, 'MMMM yyyy', { locale: nl })}
+                </Text>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => handleWeekChange(-1)} style={styles.arrowButton}>
                         <ChevronLeft size={20} color="#6B7280" />
@@ -179,6 +234,7 @@ export function WeekCalendar({ selectedDate, onSelectDate, householdId, timezone
                         const dateString = format(day, 'yyyy-MM-dd');
                         const isSelected = selectedDate === dateString;
                         const hasChore = choreDates.includes(dateString);
+                        const hasBirthday = birthdayDates.includes(dateString);
                         const isToday = isSameDay(day, new Date());
 
                         return (
@@ -197,9 +253,14 @@ export function WeekCalendar({ selectedDate, onSelectDate, householdId, timezone
                                 <Text style={[styles.dayNumber, isSelected && styles.textSelected]}>
                                     {format(day, 'd')}
                                 </Text>
-                                {hasChore && (
-                                    <View style={[styles.dot, isSelected && styles.dotSelected]} />
-                                )}
+                                <View style={styles.dotsContainer}>
+                                    {hasChore && (
+                                        <View style={[styles.dot, isSelected && styles.dotSelected]} />
+                                    )}
+                                    {hasBirthday && (
+                                        <View style={[styles.dot, styles.dotBirthday, isSelected && styles.dotSelected]} />
+                                    )}
+                                </View>
                             </TouchableOpacity>
                         );
                     })}
@@ -222,6 +283,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginBottom: 12,
         gap: 16,
+        paddingHorizontal: 16,
+    },
+    monthText: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+        textAlign: 'center',
+        textTransform: 'capitalize',
+        marginBottom: 8,
         paddingHorizontal: 16,
     },
     weekText: {
@@ -285,9 +355,17 @@ const styles = StyleSheet.create({
         height: 4,
         borderRadius: 2,
         backgroundColor: '#3B82F6',
-        marginTop: 4,
     },
     dotSelected: {
         backgroundColor: '#FFFFFF',
+    },
+    dotBirthday: {
+        backgroundColor: '#F59E0B',
+    },
+    dotsContainer: {
+        flexDirection: 'row',
+        gap: 3,
+        marginTop: 4,
+        minHeight: 4,
     },
 });

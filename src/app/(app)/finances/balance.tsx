@@ -26,6 +26,31 @@ export default function BalancePage() {
         }, [])
     );
 
+    // Real-time subscription for expenses
+    useEffect(() => {
+        if (!householdId) return;
+
+        const subscription = supabase
+            .channel('expenses_balance')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'expenses',
+                    filter: `household_id=eq.${householdId}`,
+                },
+                () => {
+                    fetchData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [householdId]);
+
     const fetchData = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();

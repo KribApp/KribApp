@@ -24,10 +24,12 @@ export function useChoresData() {
 
             const choreSubscription = subscribeToChores();
             const templateSubscription = subscribeToTemplates();
+            const usersSubscription = subscribeToUsers();
 
             return () => {
                 choreSubscription.unsubscribe();
                 templateSubscription.unsubscribe();
+                usersSubscription.unsubscribe();
             };
         }
     }, [householdId]);
@@ -53,7 +55,7 @@ export function useChoresData() {
         if (!householdId) return;
         const { data } = await supabase
             .from('household_members')
-            .select('user_id, users(username, profile_picture_url)')
+            .select('user_id, users(username, profile_picture_url, birthdate)')
             .eq('household_id', householdId);
 
         if (data) {
@@ -99,6 +101,13 @@ export function useChoresData() {
         return supabase
             .channel('chore_templates')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'chore_templates', filter: `household_id=eq.${householdId}` }, () => fetchTemplates())
+            .subscribe();
+    }
+
+    function subscribeToUsers() {
+        return supabase
+            .channel('users_chores')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users' }, () => fetchMembers())
             .subscribe();
     }
 

@@ -16,11 +16,12 @@ interface CalendarViewProps {
     currentMonth: Date;
     selectedDate: Date;
     chores: any[];
+    members: any[];
     onMonthChange: (delta: number) => void;
     onDateSelect: (date: Date) => void;
 }
 
-export function CalendarView({ currentMonth, selectedDate, chores, onMonthChange, onDateSelect }: CalendarViewProps) {
+export function CalendarView({ currentMonth, selectedDate, chores, members, onMonthChange, onDateSelect }: CalendarViewProps) {
     const { width } = useWindowDimensions();
     const translateX = useSharedValue(0);
     const opacity = useSharedValue(1);
@@ -57,6 +58,22 @@ export function CalendarView({ currentMonth, selectedDate, chores, onMonthChange
         });
     };
 
+    const getBirthdaysForDate = (date: Date) => {
+        return members.filter((m: any) => {
+            const userData = Array.isArray(m.users) ? m.users[0] : m.users;
+            if (!userData?.birthdate) return false;
+            const birthDate = new Date(userData.birthdate);
+            return birthDate.getDate() === date.getDate() &&
+                birthDate.getMonth() === date.getMonth();
+        }).map((m: any) => {
+            const userData = Array.isArray(m.users) ? m.users[0] : m.users;
+            return {
+                username: userData?.username || 'Unknown',
+                age: date.getFullYear() - new Date(userData.birthdate).getFullYear()
+            };
+        });
+    };
+
     const daysInMonth = getDaysInMonth(currentMonth);
     const firstDay = getFirstDayOfMonth(currentMonth);
     const startDay = (firstDay === 0 ? 6 : firstDay - 1); // Monday start
@@ -69,6 +86,7 @@ export function CalendarView({ currentMonth, selectedDate, chores, onMonthChange
     for (let i = 1; i <= daysInMonth; i++) {
         const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i);
         const dayChores = getChoresForDate(date);
+        const dayBirthdays = getBirthdaysForDate(date);
         const isSelected = isSameDay(date, selectedDate);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -89,12 +107,15 @@ export function CalendarView({ currentMonth, selectedDate, chores, onMonthChange
                 ]}
                 onPress={() => onDateSelect(date)}
             >
-                <Text style={[
-                    styles.dayNumber,
-                    isPast && styles.pastDayText,
-                    isSelected && styles.selectedDayText,
-                    isToday && !isSelected && styles.todayDayText
-                ]}>{i}</Text>
+                <View style={styles.dayHeader}>
+                    <Text style={[
+                        styles.dayNumber,
+                        isPast && styles.pastDayText,
+                        isSelected && styles.selectedDayText,
+                        isToday && !isSelected && styles.todayDayText
+                    ]}>{i}</Text>
+                    {dayBirthdays.length > 0 && <Text style={styles.birthdayIcon}>🎂</Text>}
+                </View>
 
                 <View style={styles.dayChoresContainer}>
                     {dayChores.slice(0, 3).map((chore, idx) => (
@@ -294,5 +315,15 @@ const styles = StyleSheet.create({
         fontSize: 8,
         color: '#6B7280',
         textAlign: 'center',
+    },
+    dayHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: 2,
+    },
+    birthdayIcon: {
+        fontSize: 10,
     },
 });

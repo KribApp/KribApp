@@ -29,7 +29,7 @@ export default function Huishouden() {
     } = useChoresData();
 
     // Tabs
-    const [activeTab, setActiveTab] = useState<'MY_TASKS' | 'CALENDAR'>('MY_TASKS');
+    const [activeTab, setActiveTab] = useState<'MY_TASKS' | 'CALENDAR'>('CALENDAR');
 
     // Calendar State
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -291,12 +291,14 @@ export default function Huishouden() {
                         currentMonth={currentMonth}
                         selectedDate={selectedDate}
                         chores={chores}
+                        members={members}
                         onMonthChange={changeMonth}
                         onDateSelect={setSelectedDate}
                     />
                     <DayDetail
                         selectedDate={selectedDate}
                         chores={chores}
+                        members={members}
                         canManage={canManage}
                         onAssignTask={() => setShowAssignmentModal(true)}
                         onToggleStatus={toggleChoreStatus}
