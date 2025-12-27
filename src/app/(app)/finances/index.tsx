@@ -96,45 +96,32 @@ export default function FinancesFeed() {
     };
 
     const groupExpenses = (data: any[]) => {
-        const active = data.filter(e => !e.is_settled);
-        const settled = data.filter(e => e.is_settled);
+        const sections: any[] = [];
+        const today = new Date().toDateString();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toDateString();
 
-        const group = (items: any[], type: 'ACTIVE' | 'SETTLED') => {
-            const sections: any[] = [];
-            const today = new Date().toDateString();
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toDateString();
+        // 1. Group all items by date (chronological)
+        data.forEach(expense => {
+            const date = new Date(expense.created_at);
+            const dateStr = date.toDateString();
 
-            items.forEach(expense => {
-                const date = new Date(expense.created_at);
-                const dateStr = date.toDateString();
+            let title = date.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+            if (dateStr === today) title = 'Vandaag';
+            else if (dateStr === yesterdayStr) title = 'Gisteren';
 
-                let title = date.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
-                if (dateStr === today) title = 'Vandaag';
-                else if (dateStr === yesterdayStr) title = 'Gisteren';
+            title = title.charAt(0).toUpperCase() + title.slice(1);
 
-                title = title.charAt(0).toUpperCase() + title.slice(1);
+            const existingSection = sections.find(s => s.title === title);
+            if (existingSection) {
+                existingSection.data.push(expense);
+            } else {
+                sections.push({ title, data: [expense] });
+            }
+        });
 
-                const existingSection = sections.find(s => s.title === title);
-                if (existingSection) {
-                    existingSection.data.push(expense);
-                } else {
-                    sections.push({ title, data: [expense], type });
-                }
-            });
-            return sections;
-        };
-
-        const activeSections = group(active, 'ACTIVE');
-        const settledSections = group(settled, 'SETTLED');
-
-        // If we have settled items, mark the first settled section to show the separator
-        if (settledSections.length > 0) {
-            settledSections[0].showSettledSeparator = true;
-        }
-
-        setGroupedExpenses([...activeSections, ...settledSections]);
+        setGroupedExpenses(sections);
     };
 
     const handleResetBalance = () => {
