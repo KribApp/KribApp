@@ -40,7 +40,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
                 setHousehold(null);
                 setMember(null);
                 setLoading(false);
-                router.replace('/(auth)/login');
+                router.replace('/');
             }
         });
 
@@ -71,7 +71,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
                     console.log('Session expired (invalid refresh token). Redirecting to login...');
                     await supabase.auth.signOut();
                     setLoading(false);
-                    router.replace('/(auth)/login');
+                    router.replace('/');
                     return;
                 }
 

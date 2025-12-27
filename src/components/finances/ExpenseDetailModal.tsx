@@ -165,42 +165,46 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
                         )}
 
                         {/* Delete Button */}
-                        <TouchableOpacity
-                            style={[styles.deleteButton, { backgroundColor: theme.colors.error + '15' }]}
-                            onPress={() => {
-                                Alert.alert(
-                                    'Uitgave verwijderen',
-                                    'Weet je zeker dat je deze uitgave wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
-                                    [
-                                        { text: 'Annuleren', style: 'cancel' },
-                                        {
-                                            text: 'Verwijderen',
-                                            style: 'destructive',
-                                            onPress: async () => {
-                                                try {
-                                                    const { error } = await supabase
-                                                        .from('expenses')
-                                                        .delete()
-                                                        .eq('id', expense.id);
+                        <View style={styles.footer}>
+                            <TouchableOpacity
+                                style={[styles.deleteButton, { backgroundColor: theme.colors.error + '15' }]}
+                                onPress={() => {
+                                    Alert.alert(
+                                        'Uitgave verwijderen',
+                                        'Weet je zeker dat je deze uitgave wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+                                        [
+                                            { text: 'Annuleren', style: 'cancel' },
+                                            {
+                                                text: 'Verwijderen',
+                                                style: 'destructive',
+                                                onPress: async () => {
+                                                    try {
+                                                        const { error } = await supabase
+                                                            .from('expenses')
+                                                            .update({
+                                                                is_settled: true,
+                                                                settled_at: new Date().toISOString()
+                                                            })
+                                                            .eq('id', expense.id);
 
-                                                    if (error) throw error;
-                                                    onClose();
-                                                } catch (err) {
-                                                    Alert.alert('Fout', 'Kon uitgave niet verwijderen.');
+                                                        if (error) throw error;
+                                                        onClose();
+                                                    } catch (err) {
+                                                        Alert.alert('Fout', 'Kon uitgave niet verwijderen.');
+                                                    }
                                                 }
                                             }
-                                        }
-                                    ]
-                                );
-                            }}
-                        >
-                            <Trash2 size={20} color={theme.colors.error} style={{ marginRight: 8 }} />
-                            <Text style={[styles.deleteButtonText, { color: theme.colors.error }]}>Uitgave verwijderen</Text>
-                        </TouchableOpacity>
+                                        ]
+                                    );
+                                }}
+                            >
+                                <Trash2 size={20} color={theme.colors.error} style={{ marginRight: 8 }} />
+                                <Text style={[styles.deleteButtonText, { color: theme.colors.error }]}>Uitgave verwijderen</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={{ height: 40 }} />
+                    </ScrollView>
                 </View>
-                <View style={{ height: 40 }} />
-            </ScrollView>
-        </View>
             </View >
         </Modal >
     );

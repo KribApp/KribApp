@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Image, StyleSheet, Platform } from 'react-native';
+import { useEffect } from 'react';
+import { View, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useHousehold } from '../context/HouseholdContext';
 import { KribTheme } from '../theme/theme';
@@ -12,7 +12,6 @@ import LandingPage from '../components/LandingPage';
  * Logic:
  * - If user is logged in -> Redirect to Dashboard.
  * - If user is NOT logged in -> Render Landing Page.
- * - Defensive fallback: If this file runs on mobile (should not happen), redirects strictly.
  */
 export default function Index() {
     const { user, household, loading } = useHousehold();
@@ -28,16 +27,7 @@ export default function Index() {
             } else {
                 router.replace('/(app)/dashboard');
             }
-            return;
         }
-
-        // If NOT logged in:
-        // Web: Stay on index (Landing Page)
-        // Mobile: Redirect to login (Defensive fallback if index.native.tsx fails)
-        if (Platform.OS !== 'web') {
-            router.replace('/(auth)/login');
-        }
-
     }, [loading, user, household]);
 
     if (loading) {
@@ -56,10 +46,7 @@ export default function Index() {
     // If user is logged in, we are redirecting (return null).
     if (user) return null;
 
-    // If not logged in & Web -> Render Landing Page
-    // If not logged in & Mobile -> useEffect redirects to login, return null
-    if (Platform.OS !== 'web') return null;
-
+    // If NOT logged in, render Landing Page
     return <LandingPage />;
 }
 

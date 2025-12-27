@@ -63,14 +63,17 @@ export default function BalancePage() {
                 .eq('household_id', member.household_id);
 
             if (expenses && members) {
+                // Filter for Active Expenses only (for Balance & Total)
+                const activeExpenses = expenses.filter(e => !e.is_settled);
+
                 // Calculate Total Spent
-                const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+                const total = activeExpenses.reduce((sum, e) => sum + e.amount, 0);
                 setTotalSpent(total);
 
                 // Calculate Balances
                 // 1. Paid
                 const paidMap: Record<string, number> = {};
-                expenses.forEach(e => {
+                activeExpenses.forEach(e => {
                     if (e.payer_user_id) {
                         paidMap[e.payer_user_id] = (paidMap[e.payer_user_id] || 0) + e.amount;
                     }
@@ -79,7 +82,7 @@ export default function BalancePage() {
                 // 2. Consumed (Shares)
                 // We need explicit shares. If we didn't fetch them properly above...
                 // Let's fetch shares by IDs
-                const expenseIds = expenses.map(e => e.id);
+                const expenseIds = activeExpenses.map(e => e.id);
                 let allShares: any[] = [];
 
                 if (expenseIds.length > 0) {
