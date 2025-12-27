@@ -66,7 +66,27 @@ export default function Register() {
         setLoading(false);
 
         if (error) {
-            Alert.alert('Error', error.message);
+            // Parse error message and show user-friendly Dutch message
+            let userMessage = error.message;
+
+            if (error.message.includes('users_username_key') || error.message.includes('duplicate key') && error.message.includes('username')) {
+                userMessage = 'Deze gebruikersnaam is al in gebruik. Kies een andere gebruikersnaam.';
+            } else if (error.message.includes('User already registered') || error.message.includes('already been registered')) {
+                userMessage = 'Dit e-mailadres is al geregistreerd. Probeer in te loggen of gebruik een ander e-mailadres.';
+            } else if (error.message.includes('Password should be at least')) {
+                userMessage = 'Je wachtwoord moet minimaal 6 tekens bevatten.';
+            } else if (error.message.includes('Invalid email')) {
+                userMessage = 'Ongeldig e-mailadres. Controleer je e-mailadres en probeer opnieuw.';
+            } else if (error.message.includes('Database error')) {
+                // Check for specific database errors
+                if (error.message.includes('username')) {
+                    userMessage = 'Deze gebruikersnaam is al in gebruik. Kies een andere gebruikersnaam.';
+                } else {
+                    userMessage = 'Er is een probleem met de database. Probeer het later opnieuw.';
+                }
+            }
+
+            Alert.alert('Fout', userMessage);
             return;
         }
 
