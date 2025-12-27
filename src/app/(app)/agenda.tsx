@@ -7,7 +7,7 @@ import { DrawerToggleButton } from '@react-navigation/drawer';
 import { useTheme } from '../../context/ThemeContext';
 import { KribTheme } from '../../theme/theme';
 import { useFocusEffect } from '@react-navigation/native';
-import { Calendar as CalendarIcon, Check, X, Clock } from 'lucide-react-native';
+import { Calendar as CalendarIcon, Check, X, Clock, Gift } from 'lucide-react-native';
 import { WeekCalendar } from '../../components/agenda/WeekCalendar';
 import { toZonedTime, format } from 'date-fns-tz';
 import { subHours } from 'date-fns';
@@ -20,6 +20,7 @@ export default function Agenda() {
     const [attendance, setAttendance] = useState<any[]>([]);
     const [dailyChores, setDailyChores] = useState<any[]>([]);
     const [events, setEvents] = useState<any[]>([]);
+    const [birthdays, setBirthdays] = useState<any[]>([]);
 
     const householdId = household?.id || null;
     const userId = user?.id || null;
@@ -57,10 +58,10 @@ export default function Agenda() {
         if (!householdId || !selectedDate) return;
         setLoading(true);
 
-        // 1. Get all members
+        // 1. Get all members with birthdate
         const { data: members, error: membersError } = await supabase
             .from('household_members')
-            .select('user_id, users(username, profile_picture_url)')
+            .select('user_id, users(username, profile_picture_url, birthdate)')
             .eq('household_id', householdId);
 
         if (membersError || !members) {
@@ -76,7 +77,7 @@ export default function Agenda() {
             .eq('date', selectedDate);
 
         // 3. Merge data
-        const merged = members.map(member => {
+        const merged = members.map((member: any) => {
             const record = records?.find(r => r.user_id === member.user_id);
             let status = record?.status || 'PENDING';
 
@@ -105,6 +106,25 @@ export default function Agenda() {
         });
 
         setAttendance(merged);
+
+        // 4. Check for birthdays
+        const todaysBirthdays = members.filter((m: any) => {
+            // @ts-ignore
+            if (!m.users?.birthdate) return false;
+            // @ts-ignore
+            const birthDate = new Date(m.users.birthdate);
+            const selected = new Date(selectedDate);
+
+            return birthDate.getDate() === selected.getDate() &&
+                birthDate.getMonth() === selected.getMonth();
+        }).map((m: any) => ({
+            // @ts-ignore
+            username: m.users.username,
+            // @ts-ignore
+            age: new Date(selectedDate).getFullYear() - new Date(m.users.birthdate).getFullYear()
+        }));
+
+        setBirthdays(todaysBirthdays);
         setLoading(false);
     }
 
@@ -314,6 +334,23 @@ export default function Agenda() {
 
             <View style={styles.content}>
                 <Text style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>Planning vandaag</Text>
+
+                {birthdays.length > 0 && (
+                    <View style={[styles.sectionCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor, borderLeftWidth: 4, borderLeftColor: theme.colors.secondary }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            <View style={{ backgroundColor: theme.colors.secondary + '20', padding: 8, borderRadius: 20 }}>
+                                <Gift size={24} color={theme.colors.secondary} />
+                            </View>
+                            <View>
+                                <Text style={[styles.subSectionTitle, { color: theme.colors.secondary, marginBottom: 2 }]}>Verjaardag!</Text>
+                                <Text style={{ color: theme.colors.text.primary, fontSize: 16 }}>
+                                    {birthdays.map(b => `${b.username} wordt ${b.age} jaar!`).join('\n')} 🥳
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
                 <View style={[styles.sectionCard, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
                     {events.length > 0 && (
                         <View style={{ marginBottom: 16 }}>

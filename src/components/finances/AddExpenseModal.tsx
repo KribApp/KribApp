@@ -131,6 +131,10 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                 }
             }
 
+            console.log("Debug: Saving Expense. Description:", description, "Amount:", cost);
+            console.log("Debug: Members:", members);
+            console.log("Debug: Shares State:", shares);
+
             // 1. Create Expense
             const { data: expense, error: expenseError } = await supabase
                 .from('expenses')
@@ -145,6 +149,7 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                 .single();
 
             if (expenseError) throw expenseError;
+            console.log("Debug: Expense Created:", expense.id);
 
             // 2. Create Shares based on weighted split
             const shareEntries = [];
@@ -161,12 +166,17 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                 }
             }
 
+            console.log("Debug: Share Entries to Insert:", JSON.stringify(shareEntries, null, 2));
+
             if (shareEntries.length > 0) {
                 const { error: sharesError } = await supabase
                     .from('expense_shares')
                     .insert(shareEntries);
 
-                if (sharesError) throw sharesError;
+                if (sharesError) {
+                    console.error("Debug: Share Insert Error:", sharesError);
+                    throw sharesError;
+                }
             }
 
             setLoading(false);
@@ -227,7 +237,7 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                                 </View>
                             </View>
                             <View>
-                                <Text style={[styles.label, { color: theme.colors.onBackground }]}>Bonnetje</Text>
+                                <Text style={[styles.label, { color: theme.colors.onBackground }]}>Bonnetje (Optioneel)</Text>
                                 <TouchableOpacity
                                     style={[styles.receiptButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, receiptUri ? { backgroundColor: theme.colors.success } : {}]}
                                     onPress={pickReceipt}
@@ -281,18 +291,6 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                                 const totalAmount = parseFloat(amount.replace(',', '.') || '0');
                                 const memberConsumed = totalShares > 0 ? (totalAmount * memberShare) / totalShares : 0;
 
-                                // Calculate Net Impact
-                                const paidAmount = member.user_id === payerId ? totalAmount : 0;
-                                const netImpact = paidAmount - memberConsumed;
-
-                                const isPositive = netImpact > 0.001;
-                                const isNegative = netImpact < -0.001;
-                                const impactColor = isPositive
-                                    ? theme.colors.success
-                                    : isNegative
-                                        ? theme.colors.error
-                                        : theme.colors.text.secondary;
-
                                 return (
                                     <View key={member.user_id} style={[styles.shareRow, { borderBottomColor: theme.colors.border }]}>
                                         <View style={styles.shareUser}>
@@ -301,8 +299,8 @@ export default function AddExpenseModal({ visible, onClose, onSuccess, household
                                             </View>
                                             <View>
                                                 <Text style={[styles.shareUsername, { color: theme.colors.text.primary }]}>{member.users.username}</Text>
-                                                <Text style={[styles.shareCost, { color: impactColor, fontWeight: 'bold' }]}>
-                                                    {isPositive ? '+' : ''}€ {netImpact.toFixed(2)}
+                                                <Text style={[styles.shareCost, { color: theme.colors.text.secondary, fontWeight: 'bold' }]}>
+                                                    € {memberConsumed.toFixed(2).replace('.', ',')}
                                                 </Text>
                                             </View>
                                         </View>

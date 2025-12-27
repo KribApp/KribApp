@@ -4,10 +4,12 @@ import { supabase } from '../../../services/supabase';
 import { Plus, Trash2, ExternalLink, ArrowLeft } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation, useRouter } from 'expo-router';
+import { useTheme } from '../../../context/ThemeContext';
 import { KribTheme } from '../../../theme/theme';
 
 export default function HallOfFame() {
     const router = useRouter();
+    const { theme, isDarkMode } = useTheme();
     const [recipes, setRecipes] = useState<any[]>([]);
     const [newRecipeName, setNewRecipeName] = useState('');
     const [newRecipeLink, setNewRecipeLink] = useState('');
@@ -163,35 +165,35 @@ export default function HallOfFame() {
     }
 
     const renderItem = ({ item }: { item: any }) => (
-        <View style={styles.itemContainer}>
+        <View style={[styles.itemContainer, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]}>
             <View style={styles.textContainer}>
-                <Text style={styles.itemText}>{item.name}</Text>
+                <Text style={[styles.itemText, { color: theme.colors.text.primary }]}>{item.name}</Text>
             </View>
 
             <View style={styles.actions}>
                 <TouchableOpacity onPress={() => addToList(item)} style={styles.actionButton}>
-                    <Plus size={20} color={KribTheme.colors.success} />
+                    <Plus size={20} color={theme.colors.success} />
                 </TouchableOpacity>
                 {item.link_url && (
                     <TouchableOpacity onPress={() => openLink(item.link_url)} style={styles.actionButton}>
-                        <ExternalLink size={20} color={KribTheme.colors.primary} />
+                        <ExternalLink size={20} color={theme.colors.primary} />
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={() => deleteRecipe(item.id)} style={styles.actionButton}>
-                    <Trash2 size={20} color={KribTheme.colors.error} />
+                    <Trash2 size={20} color={theme.colors.error} />
                 </TouchableOpacity>
             </View>
         </View>
     );
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
-            <View style={styles.header}>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
+            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ArrowLeft size={24} color="#FFFFFF" />
+                    <ArrowLeft size={24} color={theme.colors.onBackground} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Hall of Fame 🏆</Text>
+                <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>Hall of Fame 🏆</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -200,29 +202,44 @@ export default function HallOfFame() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={100}
             >
-                <View style={styles.addItemContainer}>
+                <View style={[styles.addItemContainer, { backgroundColor: theme.colors.background }]}>
                     <View style={styles.inputs}>
                         <TextInput
-                            style={styles.input}
+                            style={[
+                                styles.input,
+                                {
+                                    backgroundColor: theme.colors.inputBackground,
+                                    borderColor: theme.colors.border,
+                                    color: theme.colors.text.primary
+                                }
+                            ]}
                             value={newRecipeName}
                             onChangeText={setNewRecipeName}
                             placeholder="Gerecht naam..."
-                            placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                            placeholderTextColor={theme.colors.text.secondary}
                             returnKeyType="next"
                         />
                         <TextInput
-                            style={[styles.input, { marginTop: 8 }]}
+                            style={[
+                                styles.input,
+                                {
+                                    marginTop: 8,
+                                    backgroundColor: theme.colors.inputBackground,
+                                    borderColor: theme.colors.border,
+                                    color: theme.colors.text.primary
+                                }
+                            ]}
                             value={newRecipeLink}
                             onChangeText={setNewRecipeLink}
                             placeholder="Link (optioneel)..."
-                            placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                            placeholderTextColor={theme.colors.text.secondary}
                             autoCapitalize="none"
                             returnKeyType="done"
                             onSubmitEditing={addRecipe}
                         />
                     </View>
-                    <TouchableOpacity style={styles.addButton} onPress={addRecipe}>
-                        <Plus size={24} color={KribTheme.colors.primary} />
+                    <TouchableOpacity style={[styles.addButton, { backgroundColor: theme.colors.surface, shadowColor: theme.shadows.card.shadowColor }]} onPress={addRecipe}>
+                        <Plus size={24} color={theme.colors.primary} />
                     </TouchableOpacity>
                 </View>
 

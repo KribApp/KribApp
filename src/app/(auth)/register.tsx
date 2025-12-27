@@ -148,6 +148,8 @@ export default function Register() {
                                 placeholderTextColor={KribTheme.colors.text.secondary}
                                 secureTextEntry={!showPassword}
                                 autoCapitalize="none"
+                                textContentType="none"
+                                autoComplete="off"
                                 returnKeyType="next"
                                 onSubmitEditing={() => confirmPasswordRef.current?.focus()}
                                 blurOnSubmit={false}
@@ -177,6 +179,8 @@ export default function Register() {
                                 placeholderTextColor={KribTheme.colors.text.secondary}
                                 secureTextEntry={!showConfirmPassword}
                                 autoCapitalize="none"
+                                textContentType="none"
+                                autoComplete="off"
                                 returnKeyType="done"
                                 onSubmitEditing={() => Keyboard.dismiss()}
                                 blurOnSubmit={true}

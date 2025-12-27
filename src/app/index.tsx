@@ -13,23 +13,19 @@ import LandingPage from '../components/LandingPage';
 export default function Index() {
     const { user, household, loading } = useHousehold();
 
+
     // Use effect for redirects based on auth state
     useEffect(() => {
         if (loading) return;
 
+        // Mobile: Strict Redirects
         if (user) {
             if (!household) {
-                // Logged in but no household - go to household start
                 router.replace('/(auth)/household-start');
             } else {
-                // Logged in with household - go to dashboard
                 router.replace('/(app)/dashboard');
             }
         } else {
-            // Web: Show Landing Page (don't redirect)
-            if (Platform.OS === 'web') return;
-
-            // Mobile: Not logged in - go to login
             router.replace('/(auth)/login');
         }
     }, [loading, user, household]);
@@ -47,16 +43,7 @@ export default function Index() {
         );
     }
 
-    // If we are not logged in (and not loading), we are redirecting to login
-    // So we can return null (or keep loading state if preferred, but usually null avoids flash)
-    if (!user) {
-        if (Platform.OS === 'web') {
-            return <LandingPage />;
-        }
-        return null;
-    }
-
-    // If user exists, we are redirecting (useEffect handles it), return null or loading
+    // Mobile: Render nothing while redirecting
     return null;
 }
 

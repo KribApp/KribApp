@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, Image, ScrollView, RefreshControl } from 'react-native';
 import { X, FileText, User } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../services/supabase';
@@ -15,6 +15,9 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
     const [loading, setLoading] = useState(true);
     const [shares, setShares] = useState<any[]>([]);
     const [members, setMembers] = useState<any[]>([]);
+    const [fullExpense, setFullExpense] = useState<any>(null);
+
+    const activeExpense = fullExpense || expense;
 
     useEffect(() => {
         if (visible && expense) {
@@ -25,6 +28,15 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
     const fetchDetails = async () => {
         setLoading(true);
         try {
+            // 0. Fetch fresh Expense (to ensure receipt_url is up to date)
+            const { data: expenseData } = await supabase
+                .from('expenses')
+                .select('*')
+                .eq('id', expense.id)
+                .single();
+
+            if (expenseData) setFullExpense(expenseData);
+
             // 1. Fetch Shares
             const { data: sharesData } = await supabase
                 .from('expense_shares')
@@ -58,15 +70,16 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
 
             // Find share
             const share = shares.find(s => s.user_id === member.user_id);
+            console.log(`Debug Member: ${member.user_id} (${userData?.username}), Share:`, share, "All shares:", shares);
+
             const consumedAmount = share ? share.owed_amount : 0;
             const paidAmount = isPayer ? expense.amount : 0;
 
             // Calculate net impact
             const netImpact = paidAmount - consumedAmount;
 
-            // Show if user is payer OR has a share (even if net is 0)
-            const hasShare = share && share.owed_amount > 0;
-            if (!isPayer && !hasShare) return null;
+            // Show EVERYTHING - user wants to see red/green balance changes
+            // Even if 0, it clarifies they were part of it (or deliberately 0)
 
             const isPositive = netImpact > 0.001;
             const isNegative = netImpact < -0.001;
@@ -138,13 +151,13 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
                         )}
 
                         {/* Receipt */}
-                        {expense.receipt_url && (
+                        {activeExpense.receipt_url && (
                             <>
                                 <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
                                 <Text style={[styles.sectionTitle, { color: theme.colors.text.secondary }]}>Bonnetje</Text>
                                 <View style={[styles.receiptContainer, { backgroundColor: theme.colors.background }]}>
                                     <Image
-                                        source={{ uri: expense.receipt_url }}
+                                        source={{ uri: activeExpense.receipt_url }}
                                         style={styles.receiptImage}
                                         resizeMode="contain"
                                     />

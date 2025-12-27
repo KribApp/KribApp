@@ -1,37 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Platform, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Platform, ScrollView, Dimensions, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { KribTheme } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { CheckCircle2, Wallet, CalendarDays, ArrowRight, Home } from 'lucide-react-native';
 
 export default function LandingPage() {
-    const windowWidth = Dimensions.get('window').width;
-    const isMobileWeb = windowWidth < 768;
+    const { width } = useWindowDimensions();
+    const isMobileWeb = width < 768;
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <View style={styles.logoContainer}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                {/* Navbar */}
+                <View style={styles.navBar}>
+                    <View style={styles.logoRow}>
                         <Image
                             source={require('../../assets/krib-logo-v3.png')}
                             style={styles.logo}
                             resizeMode="contain"
                         />
                     </View>
-                    <View style={styles.authButtons}>
+                    <View style={styles.navButtons}>
                         <Pressable
-                            style={[styles.button, styles.loginButton]}
+                            style={styles.loginLink}
                             onPress={() => router.push('/(auth)/login')}
                         >
-                            <Text style={styles.loginButtonText}>Inloggen</Text>
+                            <Text style={styles.loginLinkText}>Inloggen</Text>
                         </Pressable>
                         <Pressable
-                            style={[styles.button, styles.registerButton]}
+                            style={styles.registerButton}
                             onPress={() => router.push('/(auth)/register')}
                         >
-                            <Text style={styles.registerButtonText}>Registreren</Text>
+                            <Text style={styles.registerButtonText}>Start Gratis</Text>
                         </Pressable>
                     </View>
                 </View>
@@ -39,66 +40,154 @@ export default function LandingPage() {
                 {/* Hero Section */}
                 <View style={[styles.heroSection, isMobileWeb && styles.heroSectionMobile]}>
                     <View style={[styles.heroContent, isMobileWeb && styles.heroContentMobile]}>
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>🎉 Nu beschikbaar voor iOS en Android</Text>
+                        </View>
                         <Text style={styles.heroTitle}>
-                            Je huishouden regelen was nog nooit zo <Text style={{ color: KribTheme.colors.primary }}>makkelijk</Text>.
+                            Je huishouden regelen was nog nooit zo <Text style={styles.highlightText}>makkelijk</Text>.
                         </Text>
                         <Text style={styles.heroSubtitle}>
-                            De alles-in-één app voor huisgenoten, gezinnen en koppels. Beheer taken, uitgaven en je agenda op één plek.
+                            De alles-in-één app voor huisgenoten, gezinnen en koppels. Beheer taken, uitgaven en je agenda op één plek. Zonder gedoe.
                         </Text>
-                        <Pressable
-                            style={[styles.ctaButton]}
-                            onPress={() => router.push('/(auth)/register')}
-                            onHoverIn={() => { }} // Web hover support could be added here
-                        >
-                            <Text style={styles.ctaButtonText}>Start direct gratis</Text>
-                        </Pressable>
+
+                        <View style={[styles.ctaContainer, isMobileWeb && styles.ctaContainerMobile]}>
+                            <Pressable
+                                style={styles.primaryCta}
+                                onPress={() => router.push('/(auth)/register')}
+                            >
+                                <Text style={styles.primaryCtaText}>Maak gratis account</Text>
+                                <ArrowRight size={20} color="#FFF" />
+                            </Pressable>
+                        </View>
+
+                        <View style={styles.statsContainer}>
+                            <View style={styles.statItem}>
+                                <Text style={styles.statValue}>100%</Text>
+                                <Text style={styles.statLabel}>Gratis</Text>
+                            </View>
+                            <View style={styles.statDivider} />
+                            <View style={styles.statItem}>
+                                <Text style={styles.statValue}>3+</Text>
+                                <Text style={styles.statLabel}>Tools</Text>
+                            </View>
+                        </View>
                     </View>
 
-                    {/* Visual Element / Illustration placeholder */}
+                    {/* Hero Visual - Premium App Mockup */}
                     <View style={[styles.heroVisual, isMobileWeb && styles.heroVisualMobile]}>
-                        <View style={styles.mockupContainer}>
-                            <View style={styles.mockupCard}>
-                                <Text style={styles.mockupTitle}>👋 Welkom thuis!</Text>
-                                <View style={styles.mockupRow}>
-                                    <View style={[styles.mockupItem, { backgroundColor: '#E0E7FF' }]} />
-                                    <View style={[styles.mockupItem, { flex: 2 }]} />
+                        <View style={styles.phoneMockup}>
+                            <View style={styles.phoneScreen}>
+                                {/* Mock Header */}
+                                <View style={styles.mockHeader}>
+                                    <View style={styles.mockAvatar} />
+                                    <View>
+                                        <Text style={styles.mockGreeting}>Hoi, Michiel👋</Text>
+                                        <Text style={styles.mockSubtext}>Welkom thuis!</Text>
+                                    </View>
                                 </View>
-                                <View style={styles.mockupRow}>
-                                    <View style={[styles.mockupItem, { flex: 1.5 }]} />
-                                    <View style={[styles.mockupItem, { backgroundColor: '#FEE2E2' }]} />
+
+                                {/* Mock Balance Card */}
+                                <View style={styles.mockCard}>
+                                    <Text style={styles.mockCardLabel}>Huidige Balans</Text>
+                                    <Text style={styles.mockCardValue}>+ € 24,50</Text>
+                                    <View style={styles.mockProgressBar}>
+                                        <View style={[styles.mockProgressFill, { width: '60%' }]} />
+                                    </View>
+                                </View>
+
+                                {/* Mock Tasks */}
+                                <Text style={styles.mockSectionTitle}>Mijn Taken</Text>
+                                <View style={styles.mockTaskRow}>
+                                    <View style={styles.mockCheckbox} />
+                                    <Text style={styles.mockTaskText}>Vuilnis buiten zetten</Text>
+                                </View>
+                                <View style={styles.mockTaskRow}>
+                                    <View style={[styles.mockCheckbox, { borderColor: '#10B981', backgroundColor: '#ECFDF5' }]}>
+                                        <CheckCircle2 size={12} color="#10B981" />
+                                    </View>
+                                    <Text style={[styles.mockTaskText, { textDecorationLine: 'line-through', color: '#9CA3AF' }]}>
+                                        Vaatwasser uitruimen
+                                    </Text>
                                 </View>
                             </View>
+                        </View>
+
+                        {/* Floating Cards for "3D" Effect */}
+                        <View style={styles.floatingCardLeft}>
+                            <Wallet size={24} color={KribTheme.colors.primary} />
+                            <Text style={styles.floatingCardText}>Wie betaalt wat?</Text>
+                        </View>
+                        <View style={styles.floatingCardRight}>
+                            <CalendarDays size={24} color="#F59E0B" />
+                            <Text style={styles.floatingCardText}>Samen eten!</Text>
                         </View>
                     </View>
                 </View>
 
-                {/* Features Section */}
+                {/* Features Grid */}
                 <View style={styles.featuresSection}>
-                    <FeatureCard
-                        icon="✨"
-                        title="Takenlijst"
-                        description="Verdeel taken eerlijk en streep ze af. Geen gedoe meer over wiens beurt het is."
-                    />
-                    <FeatureCard
-                        icon="💰"
-                        title="Pot & Uitgaven"
-                        description="Houd bij wie wat betaalt en verreken kosten eenvoudig met één druk op de knop."
-                    />
-                    <FeatureCard
-                        icon="📅"
-                        title="Agenda"
-                        description="Zie in één oogopslag wie wanneer thuis is en of er meegegeten wordt."
-                    />
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionOverline}>FEATURES</Text>
+                        <Text style={styles.sectionTitle}>Alles wat je nodig hebt.</Text>
+                        <Text style={styles.sectionSubtitle}>Geen losse lijstjes en tikkies meer. Krib bundelt alles in één overzichtelijk dashboard.</Text>
+                    </View>
+
+                    <View style={styles.featuresGrid}>
+                        <FeatureCard
+                            icon={<CheckCircle2 size={32} color={KribTheme.colors.primary} />}
+                            title="Takenlijst"
+                            description="Verdeel taken eerlijk en streep ze af. Ons slimme algoritme zorgt voor een eerlijke verdeling."
+                        />
+                        <FeatureCard
+                            icon={<Wallet size={32} color={KribTheme.colors.primary} />}
+                            title="Pot & Uitgaven"
+                            description="Houd bij wie wat betaalt. Verreken kosten eenvoudig en zie direct wie er nog in de min staat."
+                        />
+                        <FeatureCard
+                            icon={<CalendarDays size={32} color={KribTheme.colors.primary} />}
+                            title="Agenda & Eten"
+                            description="Zie wie er thuis is en wie er mee eet. Nooit meer te veel of te weinig koken."
+                        />
+                    </View>
                 </View>
+
+                {/* CTA Bottom */}
+                <View style={styles.bottomCtaSection}>
+                    <View style={styles.bottomCtaCard}>
+                        <Text style={styles.bottomCtaTitle}>Klaar voor meer rust in huis?</Text>
+                        <Text style={styles.bottomCtaSubtitle}>Maak vandaag nog je gratis account aan en nodig je huisgenoten uit.</Text>
+                        <Pressable
+                            style={styles.bottomCtaButton}
+                            onPress={() => router.push('/(auth)/register')}
+                        >
+                            <Text style={styles.bottomCtaButtonText}>Start nu gratis</Text>
+                        </Pressable>
+                    </View>
+                </View>
+
+                {/* Footer */}
+                <View style={styles.footer}>
+                    <View style={styles.logoRow}>
+                        <Image
+                            source={require('../../assets/krib-logo-v3.png')}
+                            style={[styles.logo, { tintColor: '#9CA3AF' }]} // Greyed out logo for footer
+                            resizeMode="contain"
+                        />
+                    </View>
+                    <Text style={styles.copyright}>© 2025 Krib App. Alle rechten voorbehouden.</Text>
+                </View>
+
             </ScrollView>
         </SafeAreaView>
     );
 }
 
-function FeatureCard({ icon, title, description }: { icon: string, title: string, description: string }) {
+function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
     return (
         <View style={styles.featureCard}>
-            <Text style={styles.featureIcon}>{icon}</Text>
+            <View style={styles.featureIconContainer}>
+                {icon}
+            </View>
             <Text style={styles.featureTitle}>{title}</Text>
             <Text style={styles.featureDescription}>{description}</Text>
         </View>
@@ -113,46 +202,44 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
     },
-    header: {
+    navBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 32,
-        paddingVertical: 24,
+        paddingHorizontal: 24, // good mobile padding
+        paddingVertical: 20,
         maxWidth: 1200,
         width: '100%',
         alignSelf: 'center',
     },
-    logoContainer: {
+    logoRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     logo: {
-        width: 100,
-        height: 40,
+        width: 80,
+        height: 32,
     },
-    authButtons: {
+    navButtons: {
         flexDirection: 'row',
+        alignItems: 'center',
         gap: 16,
     },
-    button: {
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
+    loginLink: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
     },
-    loginButton: {
-        backgroundColor: 'transparent',
-    },
-    loginButtonText: {
-        fontFamily: 'Inter_600SemiBold',
+    loginLinkText: {
         fontSize: 16,
-        color: KribTheme.colors.text.primary,
         fontWeight: '600',
+        color: '#4B5563',
+        fontFamily: Platform.OS === 'web' ? 'Inter, sans-serif' : 'System',
     },
     registerButton: {
         backgroundColor: KribTheme.colors.primary,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 99, // Pill shape
         shadowColor: KribTheme.colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
@@ -160,29 +247,29 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     registerButtonText: {
-        fontFamily: 'Inter_600SemiBold',
-        fontSize: 16,
-        color: '#FFFFFF',
+        fontSize: 15,
         fontWeight: '600',
+        color: '#FFFFFF',
+        fontFamily: Platform.OS === 'web' ? 'Inter, sans-serif' : 'System',
     },
+
+    // Hero Section
     heroSection: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 32,
-        paddingVertical: 64,
+        paddingVertical: 80,
         maxWidth: 1200,
         width: '100%',
         alignSelf: 'center',
-        gap: 48,
-        minHeight: 600,
+        gap: 64,
     },
     heroSectionMobile: {
         flexDirection: 'column',
-        paddingVertical: 32,
-        gap: 32,
-        textAlign: 'center',
-        minHeight: 'auto',
+        paddingVertical: 40,
+        paddingHorizontal: 24,
+        gap: 48,
     },
     heroContent: {
         flex: 1,
@@ -192,116 +279,376 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         textAlign: 'center',
     },
+    badge: {
+        backgroundColor: '#EEF2FF',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 99,
+        alignSelf: 'flex-start',
+        borderWidth: 1,
+        borderColor: '#E0E7FF',
+    },
+    badgeText: {
+        color: KribTheme.colors.primary,
+        fontSize: 13,
+        fontWeight: '600',
+    },
     heroTitle: {
         fontSize: 56,
-        fontFamily: 'Inter_800ExtraBold',
-        color: '#111827',
-        lineHeight: 1.1,
         fontWeight: '800',
+        color: '#111827',
+        lineHeight: 64, // tighter line height
+        fontFamily: Platform.OS === 'web' ? 'Inter, sans-serif' : 'System',
+    },
+    highlightText: {
+        color: KribTheme.colors.primary,
     },
     heroSubtitle: {
         fontSize: 20,
-        fontFamily: 'Inter_400Regular',
         color: '#4B5563',
-        lineHeight: 1.5,
-        maxWidth: 500,
+        lineHeight: 30,
+        maxWidth: 540,
+        fontFamily: Platform.OS === 'web' ? 'Inter, sans-serif' : 'System',
     },
-    ctaButton: {
-        backgroundColor: KribTheme.colors.primary,
-        paddingVertical: 16,
-        paddingHorizontal: 32,
-        borderRadius: 16,
-        alignSelf: 'flex-start',
+    ctaContainer: {
+        flexDirection: 'row',
         marginTop: 16,
-        shadowColor: KribTheme.colors.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        elevation: 8,
     },
-    ctaButtonText: {
+    ctaContainerMobile: {
+        justifyContent: 'center',
+        width: '100%',
+    },
+    primaryCta: {
+        backgroundColor: KribTheme.colors.primary,
+        paddingVertical: 18,
+        paddingHorizontal: 36,
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        shadowColor: KribTheme.colors.primary,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    primaryCtaText: {
         color: '#FFFFFF',
         fontSize: 18,
-        fontFamily: 'Inter_700Bold',
         fontWeight: '700',
+        fontFamily: Platform.OS === 'web' ? 'Inter, sans-serif' : 'System',
     },
+    statsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 24,
+        marginTop: 12,
+    },
+    statItem: {
+        gap: 4,
+    },
+    statValue: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#111827',
+    },
+    statLabel: {
+        fontSize: 14,
+        color: '#6B7280',
+        fontWeight: '500',
+    },
+    statDivider: {
+        width: 1,
+        height: 32,
+        backgroundColor: '#E5E7EB',
+    },
+
+    // Hero Visual
     heroVisual: {
         flex: 1,
-        height: 500,
-        backgroundColor: '#F3F4F6',
-        borderRadius: 32,
+        height: 600,
+        position: 'relative',
         justifyContent: 'center',
         alignItems: 'center',
-        overflow: 'hidden',
     },
     heroVisualMobile: {
         width: '100%',
-        height: 300,
+        height: 450,
     },
-    mockupContainer: {
-        width: '80%',
-        height: '80%',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 24,
+    phoneMockup: {
+        width: 300,
+        height: 580,
+        backgroundColor: '#111827',
+        borderRadius: 40,
+        borderWidth: 8,
+        borderColor: '#1F2937',
+        overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.1,
-        shadowRadius: 40,
-        elevation: 10,
-        padding: 24,
-        justifyContent: 'center',
+        shadowOffset: { width: 0, height: 25 },
+        shadowOpacity: 0.25,
+        shadowRadius: 50,
+        elevation: 20,
+        transform: [{ rotate: '-3deg' }], // Dynamic tilt
     },
-    mockupCard: {
-        gap: 16,
-    },
-    mockupTitle: {
-        fontSize: 24,
-        fontWeight: '700',
-        marginBottom: 8,
-    },
-    mockupRow: {
-        flexDirection: 'row',
-        gap: 12,
-        height: 40,
-    },
-    mockupItem: {
+    phoneScreen: {
         flex: 1,
         backgroundColor: '#F3F4F6',
-        borderRadius: 8,
+        padding: 24,
+        paddingTop: 48,
     },
-    featuresSection: {
+    mockHeader: {
         flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 24,
+    },
+    mockAvatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#D1D5DB',
+    },
+    mockGreeting: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+    },
+    mockSubtext: {
+        fontSize: 14,
+        color: '#6B7280',
+    },
+    mockCard: {
+        backgroundColor: KribTheme.colors.primary,
+        borderRadius: 20,
+        padding: 24,
+        marginBottom: 24,
+    },
+    mockCardLabel: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 14,
+        marginBottom: 8,
+    },
+    mockCardValue: {
+        color: '#FFFFFF',
+        fontSize: 32,
+        fontWeight: '700',
+        marginBottom: 16,
+    },
+    mockProgressBar: {
+        height: 6,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    mockProgressFill: {
+        height: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 3,
+    },
+    mockSectionTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+        marginBottom: 16,
+    },
+    mockTaskRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        marginBottom: 12,
+        gap: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+    },
+    mockCheckbox: {
+        width: 24,
+        height: 24,
+        borderRadius: 6,
+        borderWidth: 2,
+        borderColor: '#E5E7EB',
         justifyContent: 'center',
-        flexWrap: 'wrap',
-        gap: 24,
-        paddingHorizontal: 32,
-        paddingVertical: 64,
+        alignItems: 'center',
+    },
+    mockTaskText: {
+        fontSize: 15,
+        fontWeight: '500',
+        color: '#374151',
+    },
+
+    // Floating Elements
+    floatingCardLeft: {
+        position: 'absolute',
+        left: 0,
+        bottom: 150,
+        backgroundColor: '#FFFFFF',
+        padding: 16,
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 10,
+        transform: [{ rotate: '5deg' }],
+    },
+    floatingCardRight: {
+        position: 'absolute',
+        right: 0,
+        top: 100,
+        backgroundColor: '#FFFFFF',
+        padding: 16,
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 10,
+        transform: [{ rotate: '-5deg' }],
+    },
+    floatingCardText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#111827',
+    },
+
+    // Features Section
+    featuresSection: {
+        paddingVertical: 96,
+        paddingHorizontal: 24,
         backgroundColor: '#F9FAFB',
+        alignItems: 'center',
+    },
+    sectionHeader: {
+        alignItems: 'center',
+        marginBottom: 64,
+        maxWidth: 700,
+        textAlign: 'center',
+    },
+    sectionOverline: {
+        color: KribTheme.colors.primary,
+        fontSize: 14,
+        fontWeight: '700',
+        letterSpacing: 1.5,
+        marginBottom: 12,
+    },
+    sectionTitle: {
+        fontSize: 40,
+        fontWeight: '800',
+        color: '#111827',
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    sectionSubtitle: {
+        fontSize: 18,
+        color: '#6B7280',
+        textAlign: 'center',
+        lineHeight: 28,
+    },
+    featuresGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 32,
+        maxWidth: 1200,
+        width: '100%',
     },
     featureCard: {
         backgroundColor: '#FFFFFF',
         padding: 32,
         borderRadius: 24,
-        width: 350,
-        gap: 16,
+        width: 340,
+        minHeight: 300,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 2,
+        shadowRadius: 15,
+        elevation: 4,
     },
-    featureIcon: {
-        fontSize: 40,
+    featureIconContainer: {
+        width: 64,
+        height: 64,
+        borderRadius: 16,
+        backgroundColor: '#EEF2FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
     },
     featureTitle: {
         fontSize: 24,
-        fontFamily: 'Inter_700Bold',
-        color: '#111827',
         fontWeight: '700',
+        color: '#111827',
+        marginBottom: 12,
     },
     featureDescription: {
         fontSize: 16,
         color: '#6B7280',
-        lineHeight: 1.5,
+        lineHeight: 26,
+    },
+
+    // Bottom CTA
+    bottomCtaSection: {
+        paddingVertical: 96,
+        paddingHorizontal: 24,
+        alignItems: 'center',
+    },
+    bottomCtaCard: {
+        backgroundColor: '#111827',
+        borderRadius: 32,
+        padding: 64,
+        maxWidth: 1200,
+        width: '100%',
+        alignItems: 'center',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    bottomCtaTitle: {
+        fontSize: 40,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    bottomCtaSubtitle: {
+        fontSize: 20,
+        color: '#9CA3AF',
+        textAlign: 'center',
+        marginBottom: 32,
+        maxWidth: 600,
+    },
+    bottomCtaButton: {
+        backgroundColor: '#FFFFFF',
+        paddingVertical: 16,
+        paddingHorizontal: 32,
+        borderRadius: 16,
+    },
+    bottomCtaButtonText: {
+        color: '#111827',
+        fontSize: 18,
+        fontWeight: '700',
+    },
+
+    // Footer
+    footer: {
+        paddingVertical: 48,
+        paddingHorizontal: 32,
+        borderTopWidth: 1,
+        borderTopColor: '#F3F4F6',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 24,
+    },
+    copyright: {
+        color: '#9CA3AF',
+        fontSize: 14,
     },
 });

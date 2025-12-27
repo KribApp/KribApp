@@ -11,6 +11,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Image } from 'expo-image';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useHousehold } from '../context/HouseholdContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -23,6 +24,7 @@ export default function UserSettings() {
     const [username, setUsername] = useState('');
     const [profilePictureUrl, setProfilePictureUrl] = useState('');
     const [birthdate, setBirthdate] = useState(new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // UI State
@@ -274,7 +276,57 @@ export default function UserSettings() {
                                     value={birthdate.toLocaleDateString()}
                                     editable={false}
                                 />
+                                <TouchableOpacity
+                                    style={StyleSheet.absoluteFill}
+                                    onPress={() => setShowDatePicker(true)}
+                                />
                             </View>
+
+                            {/* Date Picker Logic */}
+                            {showDatePicker && Platform.OS === 'android' && (
+                                <DateTimePicker
+                                    value={birthdate}
+                                    mode="date"
+                                    display="default"
+                                    onChange={(event, selectedDate) => {
+                                        setShowDatePicker(false);
+                                        if (selectedDate) {
+                                            setBirthdate(selectedDate);
+                                            handleAutoSave(username, profilePictureUrl, selectedDate);
+                                        }
+                                    }}
+                                />
+                            )}
+
+                            {Platform.OS === 'ios' && showDatePicker && (
+                                <View style={styles.iosDatePickerContainer}>
+                                    <View style={styles.iosDatePickerHeader}>
+                                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                            <Text style={styles.iosDatePickerButton}>Klaar</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <DateTimePicker
+                                        value={birthdate}
+                                        mode="date"
+                                        display="spinner"
+                                        onChange={(event, selectedDate) => {
+                                            if (selectedDate) {
+                                                setBirthdate(selectedDate);
+                                            }
+                                        }}
+                                        style={{ height: 160 }}
+                                    />
+                                    <TouchableOpacity
+                                        style={styles.iosSaveButton}
+                                        onPress={() => {
+                                            handleAutoSave(username, profilePictureUrl, birthdate);
+                                            setShowDatePicker(false);
+                                        }}
+                                    >
+                                        <Text style={{ color: '#fff', fontWeight: 'bold' }}>Opslaan</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
                         </View>
                     </View>
 
@@ -564,4 +616,27 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
     },
+    iosDatePickerContainer: {
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+        marginTop: 8,
+        padding: 16,
+    },
+    iosDatePickerHeader: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginBottom: 8,
+    },
+    iosDatePickerButton: {
+        color: '#5D5FEF',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    iosSaveButton: {
+        backgroundColor: '#5D5FEF',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 8,
+    }
 });

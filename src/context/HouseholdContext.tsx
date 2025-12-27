@@ -63,7 +63,11 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 // Handle invalid refresh token (expired session) gracefully
-                if (authError.message.includes('Refresh Token') || authError.message.includes('refresh_token_not_found')) {
+                if (
+                    authError.message.includes('Refresh Token') ||
+                    authError.message.includes('refresh_token_not_found') ||
+                    authError.message.includes('Invalid Refresh Token')
+                ) {
                     console.log('Session expired (invalid refresh token). Redirecting to login...');
                     await supabase.auth.signOut();
                     setLoading(false);

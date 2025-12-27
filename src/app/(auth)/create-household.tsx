@@ -50,7 +50,8 @@ export default function CreateHousehold() {
                 `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`,
                 {
                     headers: {
-                        'User-Agent': 'Krib/1.0'
+                        'User-Agent': 'Krib/1.0',
+                        'Accept-Language': 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7' // Prefer Dutch results
                     }
                 }
             );
@@ -251,15 +252,29 @@ export default function CreateHousehold() {
                                     {loadingSuggestions ? (
                                         <ActivityIndicator style={{ padding: 10 }} />
                                     ) : (
-                                        suggestions.map((item, index) => (
-                                            <TouchableOpacity
-                                                key={index}
-                                                style={styles.suggestionItem}
-                                                onPress={() => handleSelectSuggestion(item)}
-                                            >
-                                                <Text style={styles.suggestionText}>{item.display_name}</Text>
-                                            </TouchableOpacity>
-                                        ))
+                                        suggestions.map((item, index) => {
+                                            // Construct simple display address: Street + Number, City
+                                            const addr = item.address;
+                                            const street = addr.road || '';
+                                            const number = addr.house_number || '';
+                                            const city = addr.city || addr.town || addr.village || addr.municipality || '';
+
+                                            // Only show if we have at least street or city
+                                            const displayPart1 = [street, number].filter(Boolean).join(' ');
+                                            const displayString = [displayPart1, city].filter(Boolean).join(', ');
+
+                                            return (
+                                                <TouchableOpacity
+                                                    key={index}
+                                                    style={styles.suggestionItem}
+                                                    onPress={() => handleSelectSuggestion(item)}
+                                                >
+                                                    <Text style={styles.suggestionText}>
+                                                        {displayString || item.display_name}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            );
+                                        })
                                     )}
                                 </View>
                             )}

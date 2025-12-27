@@ -663,11 +663,11 @@ export default function Chat() {
                         onSubmitEditing={() => sendMessage(message)}
                     />
                     <TouchableOpacity
-                        style={[styles.sendButton, { backgroundColor: theme.colors.primary }, (!message.trim() && !uploading) && [styles.sendButtonDisabled, { backgroundColor: theme.colors.background }]]}
+                        style={[styles.sendButton, { backgroundColor: theme.colors.primary }, (!message.trim() && !uploading) && [styles.sendButtonDisabled, { backgroundColor: theme.colors.surface }]]}
                         onPress={() => sendMessage(message)}
                         disabled={!message.trim() || uploading}
                     >
-                        <Send size={20} color={theme.colors.text.inverse} />
+                        <Send size={20} color={(!message.trim() && !uploading) ? theme.colors.text.secondary : theme.colors.text.inverse} />
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
