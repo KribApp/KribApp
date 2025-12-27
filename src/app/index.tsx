@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { View, ActivityIndicator, Image, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Image, StyleSheet, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useHousehold } from '../context/HouseholdContext';
 import { KribTheme } from '../theme/theme';
+import LandingPage from '../components/LandingPage';
 
 
 /**
@@ -25,7 +26,10 @@ export default function Index() {
                 router.replace('/(app)/dashboard');
             }
         } else {
-            // Not logged in - go to login
+            // Web: Show Landing Page (don't redirect)
+            if (Platform.OS === 'web') return;
+
+            // Mobile: Not logged in - go to login
             router.replace('/(auth)/login');
         }
     }, [loading, user, household]);
@@ -46,6 +50,9 @@ export default function Index() {
     // If we are not logged in (and not loading), we are redirecting to login
     // So we can return null (or keep loading state if preferred, but usually null avoids flash)
     if (!user) {
+        if (Platform.OS === 'web') {
+            return <LandingPage />;
+        }
         return null;
     }
 

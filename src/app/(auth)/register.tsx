@@ -47,8 +47,8 @@ export default function Register() {
         setLoading(true);
 
         // Get the redirect URL for Expo Go / standalone app
-        // This creates a URL like: exp://192.168.x.x:8081/--/(auth)/callback
-        const redirectUrl = Linking.createURL('(auth)/callback');
+        // This creates a URL like: exp://192.168.x.x:8081/--/(auth)/callback (Expo Go) OR krib://(auth)/callback (Production)
+        const redirectUrl = Linking.createURL('(auth)/callback', { scheme: 'krib' });
 
         // 1. Sign up with Supabase Auth
         const { data: { session, user }, error } = await supabase.auth.signUp({

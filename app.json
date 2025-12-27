@@ -37,7 +37,8 @@
       "favicon": "./assets/krib-favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-secure-store"
     ],
     "scheme": "krib",
     "extra": {
@@ -45,6 +46,12 @@
       "eas": {
         "projectId": "21077814-7190-4573-aceb-7ca8d7d80d67"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/21077814-7190-4573-aceb-7ca8d7d80d67"
     }
   }
 }
