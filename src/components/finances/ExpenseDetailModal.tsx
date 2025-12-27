@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, Image, ScrollView, RefreshControl } from 'react-native';
-import { X, FileText, User } from 'lucide-react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, Image, ScrollView, RefreshControl, Alert } from 'react-native';
+import { X, FileText, User, Trash2 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../services/supabase';
 
@@ -70,7 +70,6 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
 
             // Find share
             const share = shares.find(s => s.user_id === member.user_id);
-            console.log(`Debug Member: ${member.user_id} (${userData?.username}), Share:`, share, "All shares:", shares);
 
             const consumedAmount = share ? share.owed_amount : 0;
             const paidAmount = isPayer ? expense.amount : 0;
@@ -164,10 +163,46 @@ export default function ExpenseDetailModal({ visible, onClose, expense }: Expens
                                 </View>
                             </>
                         )}
-                    </ScrollView>
+
+                        {/* Delete Button */}
+                        <TouchableOpacity
+                            style={[styles.deleteButton, { backgroundColor: theme.colors.error + '15' }]}
+                            onPress={() => {
+                                Alert.alert(
+                                    'Uitgave verwijderen',
+                                    'Weet je zeker dat je deze uitgave wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+                                    [
+                                        { text: 'Annuleren', style: 'cancel' },
+                                        {
+                                            text: 'Verwijderen',
+                                            style: 'destructive',
+                                            onPress: async () => {
+                                                try {
+                                                    const { error } = await supabase
+                                                        .from('expenses')
+                                                        .delete()
+                                                        .eq('id', expense.id);
+
+                                                    if (error) throw error;
+                                                    onClose();
+                                                } catch (err) {
+                                                    Alert.alert('Fout', 'Kon uitgave niet verwijderen.');
+                                                }
+                                            }
+                                        }
+                                    ]
+                                );
+                            }}
+                        >
+                            <Trash2 size={20} color={theme.colors.error} style={{ marginRight: 8 }} />
+                            <Text style={[styles.deleteButtonText, { color: theme.colors.error }]}>Uitgave verwijderen</Text>
+                        </TouchableOpacity>
                 </View>
-            </View>
-        </Modal>
+                <View style={{ height: 40 }} />
+            </ScrollView>
+        </View>
+            </View >
+        </Modal >
     );
 }
 
@@ -180,7 +215,7 @@ const styles = StyleSheet.create({
     content: {
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
-        height: '80%',
+        height: '90%', // Increased height
         paddingTop: 24,
         // Shadows would be dynamic or passed but here we can rely on elevation or basic shadow
         shadowColor: "#000",
@@ -280,5 +315,20 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         borderRadius: 8,
+    },
+    footer: {
+        marginTop: 24,
+        marginBottom: 24,
+    },
+    deleteButton: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 16,
+    },
+    deleteButtonText: {
+        fontWeight: 'bold',
+        fontSize: 16,
     }
 });

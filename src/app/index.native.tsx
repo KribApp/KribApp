@@ -1,43 +1,30 @@
-import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Image, StyleSheet, Platform } from 'react-native';
+import { useEffect } from 'react';
+import { View, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useHousehold } from '../context/HouseholdContext';
 import { KribTheme } from '../theme/theme';
-import LandingPage from '../components/LandingPage';
 
 /**
- * Default Entry Point (index.tsx)
- * Acts as the Web Entry Point because Mobile uses index.native.tsx.
- * 
- * Logic:
- * - If user is logged in -> Redirect to Dashboard.
- * - If user is NOT logged in -> Render Landing Page.
- * - Defensive fallback: If this file runs on mobile (should not happen), redirects strictly.
+ * Mobile Entry Point (index.native.tsx)
+ * Matches standard React Native resolution for iOS/Android.
+ * Strict redirects to Login or Dashboard.
  */
-export default function Index() {
+export default function IndexNative() {
     const { user, household, loading } = useHousehold();
 
     // Use effect for redirects based on auth state
     useEffect(() => {
         if (loading) return;
 
-        // If user is logged in, redirect regardless of platform
         if (user) {
             if (!household) {
                 router.replace('/(auth)/household-start');
             } else {
                 router.replace('/(app)/dashboard');
             }
-            return;
-        }
-
-        // If NOT logged in:
-        // Web: Stay on index (Landing Page)
-        // Mobile: Redirect to login (Defensive fallback if index.native.tsx fails)
-        if (Platform.OS !== 'web') {
+        } else {
             router.replace('/(auth)/login');
         }
-
     }, [loading, user, household]);
 
     if (loading) {
@@ -53,14 +40,8 @@ export default function Index() {
         );
     }
 
-    // If user is logged in, we are redirecting (return null).
-    if (user) return null;
-
-    // If not logged in & Web -> Render Landing Page
-    // If not logged in & Mobile -> useEffect redirects to login, return null
-    if (Platform.OS !== 'web') return null;
-
-    return <LandingPage />;
+    // Render nothing while redirecting
+    return null;
 }
 
 const styles = StyleSheet.create({
@@ -68,7 +49,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F4F5F7',
     },
     logo: {
         width: 150,
