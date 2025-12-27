@@ -1,18 +1,22 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Platform, ScrollView, Dimensions, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Platform, ScrollView, useWindowDimensions, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { KribTheme } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CheckCircle2, Wallet, CalendarDays, ArrowRight, Home } from 'lucide-react-native';
+import { CheckCircle2, Wallet, CalendarDays, Smartphone, Apple, Mail } from 'lucide-react-native';
 
 export default function LandingPage() {
     const { width } = useWindowDimensions();
     const isMobileWeb = width < 768;
 
+    const handleEmailContact = () => {
+        Linking.openURL('mailto:info@kribapp.com');
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {/* Navbar */}
+                {/* Navbar - Logo only, no auth buttons */}
                 <View style={styles.navBar}>
                     <View style={styles.logoRow}>
                         <Image
@@ -20,20 +24,6 @@ export default function LandingPage() {
                             style={styles.logo}
                             resizeMode="contain"
                         />
-                    </View>
-                    <View style={styles.navButtons}>
-                        <Pressable
-                            style={styles.loginLink}
-                            onPress={() => router.push('/(auth)/login')}
-                        >
-                            <Text style={styles.loginLinkText}>Inloggen</Text>
-                        </Pressable>
-                        <Pressable
-                            style={styles.registerButton}
-                            onPress={() => router.push('/(auth)/register')}
-                        >
-                            <Text style={styles.registerButtonText}>Start Gratis</Text>
-                        </Pressable>
                     </View>
                 </View>
 
@@ -50,14 +40,22 @@ export default function LandingPage() {
                             De alles-in-één app voor huisgenoten, gezinnen en koppels. Beheer taken, uitgaven en je agenda op één plek. Zonder gedoe.
                         </Text>
 
-                        <View style={[styles.ctaContainer, isMobileWeb && styles.ctaContainerMobile]}>
-                            <Pressable
-                                style={styles.primaryCta}
-                                onPress={() => router.push('/(auth)/register')}
-                            >
-                                <Text style={styles.primaryCtaText}>Maak gratis account</Text>
-                                <ArrowRight size={20} color="#FFF" />
-                            </Pressable>
+                        {/* App Store Badges */}
+                        <View style={[styles.appStoreContainer, isMobileWeb && styles.appStoreContainerMobile]}>
+                            <View style={styles.appStoreBadge}>
+                                <Apple size={24} color="#FFF" />
+                                <View>
+                                    <Text style={styles.appStoreLabel}>Download in de</Text>
+                                    <Text style={styles.appStoreName}>App Store</Text>
+                                </View>
+                            </View>
+                            <View style={styles.appStoreBadge}>
+                                <Smartphone size={24} color="#FFF" />
+                                <View>
+                                    <Text style={styles.appStoreLabel}>Beschikbaar op</Text>
+                                    <Text style={styles.appStoreName}>Google Play</Text>
+                                </View>
+                            </View>
                         </View>
 
                         <View style={styles.statsContainer}>
@@ -151,29 +149,55 @@ export default function LandingPage() {
                     </View>
                 </View>
 
-                {/* CTA Bottom */}
+                {/* CTA Bottom - App Store Info */}
                 <View style={styles.bottomCtaSection}>
                     <View style={styles.bottomCtaCard}>
                         <Text style={styles.bottomCtaTitle}>Klaar voor meer rust in huis?</Text>
-                        <Text style={styles.bottomCtaSubtitle}>Maak vandaag nog je gratis account aan en nodig je huisgenoten uit.</Text>
-                        <Pressable
-                            style={styles.bottomCtaButton}
-                            onPress={() => router.push('/(auth)/register')}
-                        >
-                            <Text style={styles.bottomCtaButtonText}>Start nu gratis</Text>
-                        </Pressable>
+                        <Text style={styles.bottomCtaSubtitle}>Download Krib gratis in de App Store of Google Play Store en begin vandaag nog.</Text>
+                        <View style={[styles.appStoreContainer, { marginTop: 24 }]}>
+                            <View style={[styles.appStoreBadge, styles.appStoreBadgeLight]}>
+                                <Apple size={24} color="#111827" />
+                                <View>
+                                    <Text style={[styles.appStoreLabel, { color: '#6B7280' }]}>Download in de</Text>
+                                    <Text style={[styles.appStoreName, { color: '#111827' }]}>App Store</Text>
+                                </View>
+                            </View>
+                            <View style={[styles.appStoreBadge, styles.appStoreBadgeLight]}>
+                                <Smartphone size={24} color="#111827" />
+                                <View>
+                                    <Text style={[styles.appStoreLabel, { color: '#6B7280' }]}>Beschikbaar op</Text>
+                                    <Text style={[styles.appStoreName, { color: '#111827' }]}>Google Play</Text>
+                                </View>
+                            </View>
+                        </View>
                     </View>
                 </View>
 
-                {/* Footer */}
+                {/* Footer with links */}
                 <View style={styles.footer}>
                     <View style={styles.logoRow}>
                         <Image
                             source={require('../../assets/krib-logo-v3.png')}
-                            style={[styles.logo, { tintColor: '#9CA3AF' }]} // Greyed out logo for footer
+                            style={[styles.logo, { tintColor: '#9CA3AF' }]}
                             resizeMode="contain"
                         />
                     </View>
+
+                    {/* Footer Links */}
+                    <View style={styles.footerLinks}>
+                        <Pressable onPress={() => router.push('/privacy')}>
+                            <Text style={styles.footerLink}>Privacy Policy</Text>
+                        </Pressable>
+                        <Text style={styles.footerDivider}>•</Text>
+                        <Pressable onPress={() => router.push('/support')}>
+                            <Text style={styles.footerLink}>Contact & Support</Text>
+                        </Pressable>
+                        <Text style={styles.footerDivider}>•</Text>
+                        <Pressable onPress={handleEmailContact}>
+                            <Text style={styles.footerLink}>info@kribapp.com</Text>
+                        </Pressable>
+                    </View>
+
                     <Text style={styles.copyright}>© 2025 Krib App. Alle rechten voorbehouden.</Text>
                 </View>
 
@@ -204,9 +228,9 @@ const styles = StyleSheet.create({
     },
     navBar: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 24, // good mobile padding
+        paddingHorizontal: 24,
         paddingVertical: 20,
         maxWidth: 1200,
         width: '100%',
@@ -219,38 +243,6 @@ const styles = StyleSheet.create({
     logo: {
         width: 80,
         height: 32,
-    },
-    navButtons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 16,
-    },
-    loginLink: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-    },
-    loginLinkText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#4B5563',
-        fontFamily: Platform.OS === 'web' ? 'Inter, sans-serif' : 'System',
-    },
-    registerButton: {
-        backgroundColor: KribTheme.colors.primary,
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 99, // Pill shape
-        shadowColor: KribTheme.colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    registerButtonText: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#FFFFFF',
-        fontFamily: Platform.OS === 'web' ? 'Inter, sans-serif' : 'System',
     },
 
     // Hero Section
@@ -277,7 +269,6 @@ const styles = StyleSheet.create({
     },
     heroContentMobile: {
         alignItems: 'center',
-        textAlign: 'center',
     },
     badge: {
         backgroundColor: '#EEF2FF',
@@ -297,7 +288,7 @@ const styles = StyleSheet.create({
         fontSize: 56,
         fontWeight: '800',
         color: '#111827',
-        lineHeight: 64, // tighter line height
+        lineHeight: 64,
         fontFamily: Platform.OS === 'web' ? 'Inter, sans-serif' : 'System',
     },
     highlightText: {
@@ -310,34 +301,42 @@ const styles = StyleSheet.create({
         maxWidth: 540,
         fontFamily: Platform.OS === 'web' ? 'Inter, sans-serif' : 'System',
     },
-    ctaContainer: {
+
+    // App Store Badges
+    appStoreContainer: {
         flexDirection: 'row',
+        gap: 16,
         marginTop: 16,
+        flexWrap: 'wrap',
     },
-    ctaContainerMobile: {
+    appStoreContainerMobile: {
         justifyContent: 'center',
-        width: '100%',
     },
-    primaryCta: {
-        backgroundColor: KribTheme.colors.primary,
-        paddingVertical: 18,
-        paddingHorizontal: 36,
-        borderRadius: 16,
+    appStoreBadge: {
+        backgroundColor: '#111827',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 12,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        shadowColor: KribTheme.colors.primary,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        elevation: 10,
     },
-    primaryCtaText: {
+    appStoreBadgeLight: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    appStoreLabel: {
+        color: '#9CA3AF',
+        fontSize: 11,
+        fontWeight: '500',
+    },
+    appStoreName: {
         color: '#FFFFFF',
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '700',
-        fontFamily: Platform.OS === 'web' ? 'Inter, sans-serif' : 'System',
     },
+
     statsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -388,7 +387,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 50,
         elevation: 20,
-        transform: [{ rotate: '-3deg' }], // Dynamic tilt
+        transform: [{ rotate: '-3deg' }],
     },
     phoneScreen: {
         flex: 1,
@@ -531,7 +530,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 64,
         maxWidth: 700,
-        textAlign: 'center',
     },
     sectionOverline: {
         color: KribTheme.colors.primary,
@@ -607,7 +605,6 @@ const styles = StyleSheet.create({
         maxWidth: 1200,
         width: '100%',
         alignItems: 'center',
-        textAlign: 'center',
         position: 'relative',
         overflow: 'hidden',
     },
@@ -622,19 +619,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
         color: '#9CA3AF',
         textAlign: 'center',
-        marginBottom: 32,
         maxWidth: 600,
-    },
-    bottomCtaButton: {
-        backgroundColor: '#FFFFFF',
-        paddingVertical: 16,
-        paddingHorizontal: 32,
-        borderRadius: 16,
-    },
-    bottomCtaButtonText: {
-        color: '#111827',
-        fontSize: 18,
-        fontWeight: '700',
     },
 
     // Footer
@@ -646,6 +631,22 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
         alignItems: 'center',
         gap: 24,
+    },
+    footerLinks: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+    },
+    footerLink: {
+        fontSize: 14,
+        color: '#6B7280',
+        fontWeight: '500',
+    },
+    footerDivider: {
+        color: '#D1D5DB',
+        fontSize: 14,
     },
     copyright: {
         color: '#9CA3AF',
