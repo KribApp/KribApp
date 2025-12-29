@@ -7,20 +7,24 @@ import LandingPage from '../components/LandingPage';
 
 /**
  * Universal Entry Point (index.tsx)
- * Single entry point for both Web and Mobile platforms.
  * 
  * Logic:
- * - Web: If user is logged in -> Redirect to Dashboard. If NOT logged in -> Render Landing Page.
- * - Mobile: Always redirect to Login or Dashboard (no landing page on mobile).
+ * - Web (all browsers, including mobile Safari/Chrome): Always show Landing Page
+ *   The web version is informational only - users must download the native app.
+ * - Native App (iOS/Android): Redirect to Login or Dashboard based on auth state.
  */
 export default function Index() {
     const { user, household, loading } = useHousehold();
 
-    // Use effect for redirects based on auth state
+    // On web: Always show landing page, no redirects needed
+    // On native: Handle auth-based redirects
     useEffect(() => {
+        // Skip all redirects on web - just show landing page
+        if (Platform.OS === 'web') return;
+
         if (loading) return;
 
-        // If user is logged in, redirect regardless of platform
+        // Native app only: redirect based on auth state
         if (user) {
             if (!household) {
                 router.replace('/(auth)/household-start');
@@ -28,15 +32,16 @@ export default function Index() {
                 router.replace('/(app)/dashboard');
             }
         } else {
-            // Not logged in:
-            // - On mobile: redirect to login screen
-            // - On web: render landing page (handled below)
-            if (Platform.OS !== 'web') {
-                router.replace('/(auth)/login');
-            }
+            router.replace('/(auth)/login');
         }
     }, [loading, user, household]);
 
+    // On web: Always show the landing page regardless of auth state
+    if (Platform.OS === 'web') {
+        return <LandingPage />;
+    }
+
+    // Native app: Show loading while checking auth
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -50,14 +55,8 @@ export default function Index() {
         );
     }
 
-    // If user is logged in, we are redirecting (return null).
-    if (user) return null;
-
-    // On mobile, we are redirecting to login (return null)
-    if (Platform.OS !== 'web') return null;
-
-    // If NOT logged in on Web, render Landing Page
-    return <LandingPage />;
+    // Native app: Redirecting, show nothing
+    return null;
 }
 
 const styles = StyleSheet.create({
